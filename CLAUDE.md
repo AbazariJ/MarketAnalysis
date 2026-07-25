@@ -10,7 +10,7 @@ TypeScript, HTML, CSS — no server component. Build tooling: Vite + Node.js 18.
 - Run: `npm run dev` (assumption — Vite dev server, not exercised this session)
 - Test: `npm test` (verified — Vitest)
 - Lint / format: `npm run lint` (verified — ESLint)
-- Build / deploy: `npm run build` (verified — produces `dist/`) then publish `dist/` to the `gh-pages` branch (assumption — deploy mechanism not yet set up)
+- Build / deploy: `npm run deploy` (verified — builds and publishes `dist/` to the `gh-pages` branch via the `gh-pages` npm package; GitHub Pages is configured to serve from that branch at https://abazarij.github.io/MarketAnalysis/)
 
 ## Layout
 ```

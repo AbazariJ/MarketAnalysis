@@ -7,3 +7,4 @@ npm-debug.log*
 .env
 .env.local
 coverage/
+.claude/scheduled_tasks.lock
