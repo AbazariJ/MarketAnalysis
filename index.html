@@ -1,22 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="fa" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Market Analysis</title>
+    <title>تحلیل بازار</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
-      <h1>Gold (18k) vs Tehran Stock Exchange Index</h1>
-      <p id="status">Loading data from tgju.org and tsetmc.com…</p>
+      <h1>مقایسه دارایی با شاخص کل بورس تهران</h1>
+      <p>
+        <label for="asset-select">دارایی</label>
+        <select id="asset-select"></select>
+        <label for="index-select">شاخص</label>
+        <select id="index-select"></select>
+      </p>
+      <p id="status">در حال بارگذاری داده‌ها از tgju.org و tsetmc.com…</p>
       <div id="charts" hidden>
         <section>
-          <h2>Price series (log scale)</h2>
+          <h2>نمودار قیمت (مقیاس لگاریتمی)</h2>
           <canvas id="price-chart" width="800" height="320"></canvas>
         </section>
         <section>
-          <h2>Gold / Index ratio</h2>
+          <h2 id="ratio-title">نسبت دارایی به شاخص</h2>
           <canvas id="ratio-chart" width="800" height="320"></canvas>
         </section>
       </div>

@@ -28,6 +28,7 @@ docs/    # standards, ADRs, runbooks
 - Tests: name `should_X_when_Y`; one concept per test; mock external deps, never own code; builders/factories over magic literals.
 - API endpoints (if any): 4xx = client fault, 5xx = ours, never 200 with an error body.
 - Naming: booleans prefixed `is/has/can/should`; functions start with a verb; no non-obvious abbreviations.
+- UI language: all user-facing text is Persian (Farsi), page is right-to-left (`<html lang="fa" dir="rtl">`). Diagnostic/technical error internals may stay in English.
 
 ## Gotchas
 - Browser `fetch()` cannot set `Origin`, `Referer`, or `User-Agent` (forbidden headers) — the notebook's Python `requests` calls to tsetmc.com set these manually, which has no browser equivalent. tsetmc responses depend entirely on the server sending permissive CORS headers on its own; if it doesn't, requests fail as opaque CORS errors with no way to work around it client-side (see T-010 fallback idea).
