@@ -15,7 +15,6 @@ Example entries below — replace with real ones.
 ## Next (ordered by priority; ready = has AC, size ≤ M)
 
 ## Later (ideas — no AC or sizing required yet)
-- [ ] T-006 N-day % change distribution (histogram + correlation scatter)
 - [ ] T-007 Support additional tgju symbols (currencies, silver, coins)
 - [ ] T-008 Jalali (Persian) date display
 - [ ] T-009 Local caching of fetched series (localStorage, TTL)
@@ -29,3 +28,5 @@ Example entries below — replace with real ones.
 - [x] T-003 (P1, S) Fetch TSE all-share index series client-side — 2026-07-25 (endpoint unverified live: tsetmc.com unreachable from build/dev sandbox; verify in a real browser)
 - [x] T-004 (P2, M) Merge series and render price chart — 2026-07-25
 - [x] T-005 (P2, M) Gold/index ratio analysis view — 2026-07-25
+- [x] T-006 (P2, M) N-day % change distribution (correlation scatter + histograms + median/mean stats) — 2026-07-25 (window selectable: 30/90/180/365d; pct-change pipeline cross-validated against an independent reference on 3197 rows of live tgju data, exact match)
+- [x] T-013 (P2, S) Asset-vs-index log-log scatter with equal-growth reference line (notebook cell 11, plot 3) — 2026-07-25

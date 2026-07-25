@@ -14,6 +14,8 @@
         <select id="asset-select"></select>
         <label for="index-select">شاخص</label>
         <select id="index-select"></select>
+        <label for="days-select">بازه تغییر درصدی</label>
+        <select id="days-select"></select>
       </p>
       <p id="status">در حال بارگذاری داده‌ها از tgju.org و tsetmc.com…</p>
       <div id="charts" hidden>
@@ -24,6 +26,30 @@
         <section>
           <h2 id="ratio-title">نسبت دارایی به شاخص</h2>
           <canvas id="ratio-chart" width="800" height="320"></canvas>
+        </section>
+        <section>
+          <h2 id="correlation-title">پراکندگی دارایی در برابر شاخص (مقیاس لگاریتمی)</h2>
+          <p class="hint">
+            خط قرمز، رشد هم‌نسبت دو دارایی را نشان می‌دهد؛ نقاط بالای آن یعنی دارایی بیش از شاخص رشد کرده است.
+          </p>
+          <canvas id="correlation-chart" width="800" height="360"></canvas>
+        </section>
+        <section>
+          <h2 id="pct-scatter-title">همبستگی تغییر درصدی</h2>
+          <p class="hint">هر نقطه یک روز است؛ نقطه قرمز میانه هر دو سری و خطوط قرمز محورهای صفر هستند.</p>
+          <canvas id="pct-scatter-chart" width="800" height="360"></canvas>
+        </section>
+        <section>
+          <h2 id="index-hist-title">توزیع تغییر درصدی شاخص</h2>
+          <canvas id="index-hist-chart" width="800" height="280"></canvas>
+        </section>
+        <section>
+          <h2 id="asset-hist-title">توزیع تغییر درصدی دارایی</h2>
+          <canvas id="asset-hist-chart" width="800" height="280"></canvas>
+        </section>
+        <section>
+          <h2>خلاصه آماری تغییر درصدی</h2>
+          <table id="stats-table"></table>
         </section>
       </div>
     </div>

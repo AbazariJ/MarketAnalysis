@@ -1,3 +1,5 @@
+import { formatNumber } from "./format";
+
 export interface ChartSeries {
   label: string;
   color: string;
@@ -113,10 +115,4 @@ export function drawLineChart(canvas: HTMLCanvasElement, series: ChartSeries[], 
     ctx.textAlign = "center";
     ctx.fillText(options.title, width / 2, height - 6);
   }
-}
-
-function formatNumber(n: number): string {
-  if (Math.abs(n) >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
-  if (Math.abs(n) >= 1e3) return `${(n / 1e3).toFixed(1)}k`;
-  return n.toFixed(2);
 }
