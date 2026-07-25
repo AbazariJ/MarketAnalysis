@@ -20,6 +20,7 @@ docs/    # standards, ADRs, runbooks
 ```
 
 ## Conventions
+- Git: commit directly on `main`/`master` in the primary checkout — do not use `git worktree` for this repo.
 - Commits: Conventional Commits (`feat|fix|refactor|test|docs|chore|perf(scope): msg`), atomic and bisectable.
 - Errors: typed domain errors (`OrderNotFoundError`), never raw strings; recoverable → retry, non-recoverable → fail fast.
 - Validate all input at the boundary (Pydantic / Zod) before any business logic runs.
