@@ -13,14 +13,6 @@ Example entries below — replace with real ones.
 ## Now (WIP limit: 1)
 
 ## Next (ordered by priority; ready = has AC, size ≤ M)
-- [ ] T-002 (P1, S) Fetch tgju gold price series client-side
-  - AC: fetch daily `geram18` series from api.tgju.org via browser `fetch`; parse into `{date, close}[]`; on CORS/network failure show a visible error state instead of a silent crash (AC: draft)
-- [ ] T-003 (P1, S) Fetch TSE all-share index series client-side
-  - AC: fetch index history from cdn.tsetmc.com via browser `fetch`; parse into `{date, close}[]`; on CORS/network failure show a visible error state instead of a silent crash (AC: draft)
-- [ ] T-004 (P2, M) Merge series and render price chart
-  - AC: merge gold + index series by date with forward-fill; render both as a log-scale line chart on the page (AC: draft)
-- [ ] T-005 (P2, M) Gold/index ratio analysis view
-  - AC: compute gold/index ratio and its mean over the merged range; render ratio-over-time chart with mean line on the page (AC: draft)
 
 ## Later (ideas — no AC or sizing required yet)
 - [ ] T-006 N-day % change distribution (histogram + correlation scatter)
@@ -33,3 +25,7 @@ Example entries below — replace with real ones.
 
 ## Done (recent only — pruned by /groom)
 - [x] T-001 (P1, S) Bootstrap project scaffold (Vite + TS + Vitest + ESLint, one trivial test) — 2026-07-25
+- [x] T-002 (P1, S) Fetch tgju gold price series client-side — 2026-07-25
+- [x] T-003 (P1, S) Fetch TSE all-share index series client-side — 2026-07-25 (endpoint unverified live: tsetmc.com unreachable from build/dev sandbox; verify in a real browser)
+- [x] T-004 (P2, M) Merge series and render price chart — 2026-07-25
+- [x] T-005 (P2, M) Gold/index ratio analysis view — 2026-07-25

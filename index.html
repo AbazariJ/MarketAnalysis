@@ -7,7 +7,20 @@
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <h1>Gold (18k) vs Tehran Stock Exchange Index</h1>
+      <p id="status">Loading data from tgju.org and tsetmc.com…</p>
+      <div id="charts" hidden>
+        <section>
+          <h2>Price series (log scale)</h2>
+          <canvas id="price-chart" width="800" height="320"></canvas>
+        </section>
+        <section>
+          <h2>Gold / Index ratio</h2>
+          <canvas id="ratio-chart" width="800" height="320"></canvas>
+        </section>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

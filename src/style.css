@@ -2,3 +2,17 @@ body {
   font-family: system-ui, sans-serif;
   margin: 2rem;
 }
+
+#status.error {
+  color: #c53030;
+  font-weight: 600;
+}
+
+canvas {
+  max-width: 100%;
+  border: 1px solid #eee;
+}
+
+section {
+  margin-bottom: 2rem;
+}

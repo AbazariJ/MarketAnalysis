@@ -29,6 +29,9 @@ docs/    # standards, ADRs, runbooks
 - Naming: booleans prefixed `is/has/can/should`; functions start with a verb; no non-obvious abbreviations.
 
 ## Gotchas
+- Browser `fetch()` cannot set `Origin`, `Referer`, or `User-Agent` (forbidden headers) — the notebook's Python `requests` calls to tsetmc.com set these manually, which has no browser equivalent. tsetmc responses depend entirely on the server sending permissive CORS headers on its own; if it doesn't, requests fail as opaque CORS errors with no way to work around it client-side (see T-010 fallback idea).
+- tsetmc.com was unreachable from the dev/build sandbox used to write this code (`curl` timed out on both the main site and API) — the tsetmc fetcher (`src/api/tsetmc.ts`) is implemented from the source notebook's logic but not exercised against a live response. Verify in an actual browser before trusting it.
+- tgju.org's API (`api.tgju.org`) sends `access-control-allow-origin: *` and works from direct browser `fetch` — verified live.
 
 ## Task management
 - Single source of truth: `docs/BACKLOG.md`. Read it only when running /groom, /next, /plan, /close, /bug, or when I reference a task ID — never load it otherwise.
