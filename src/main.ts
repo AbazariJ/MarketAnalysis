@@ -8,6 +8,7 @@ import { histogram, mean, median } from "./analysis/stats";
 import { drawLineChart } from "./charts/lineChart";
 import { drawScatterChart } from "./charts/scatterChart";
 import { drawHistogram } from "./charts/histogramChart";
+import { initDataTable } from "./ui/dataTable";
 import { FetchError, type PricePoint } from "./types";
 
 const ASSET_COLOR = "#c9a227";
@@ -33,6 +34,8 @@ const indexHistTitleEl = document.querySelector<HTMLHeadingElement>("#index-hist
 const assetHistTitleEl = document.querySelector<HTMLHeadingElement>("#asset-hist-title")!;
 const statsTableEl = document.querySelector<HTMLTableElement>("#stats-table")!;
 const dataTableEl = document.querySelector<HTMLTableElement>("#data-table")!;
+const dataTableSearchEl = document.querySelector<HTMLInputElement>("#data-table-search")!;
+const dataTableCountEl = document.querySelector<HTMLElement>("#data-table-count")!;
 const assetSelectEl = document.querySelector<HTMLSelectElement>("#asset-select")!;
 const indexSelectEl = document.querySelector<HTMLSelectElement>("#index-select")!;
 const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
@@ -209,25 +212,26 @@ function formatNumber(value: number): string {
   return toPersianDigits(value.toLocaleString("en-US", { maximumFractionDigits: 2 }));
 }
 
-/** Raw merged series backing the charts above, newest day first. */
+let dataTableAssetLabel = "";
+let dataTableIndexLabel = "";
+
+/** Interactive view of the raw merged series backing the charts above. */
+const dataTable = initDataTable<MergedPoint>({
+  table: dataTableEl,
+  searchInput: dataTableSearchEl,
+  countEl: dataTableCountEl,
+  initialSort: { key: "date", dir: -1 },
+  columns: [
+    { key: "date", label: "تاریخ", value: (p) => p.date, format: (p) => toPersianDigits(p.date) },
+    { key: "gold", label: () => dataTableAssetLabel, value: (p) => p.gold, format: (p) => formatNumber(p.gold) },
+    { key: "index", label: () => dataTableIndexLabel, value: (p) => p.index, format: (p) => formatNumber(p.index) },
+  ],
+});
+
 function renderDataTable(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
-  dataTableEl.innerHTML = `
-    <thead>
-      <tr><th>تاریخ</th><th>${assetLabel}</th><th>${indexLabel}</th></tr>
-    </thead>
-    <tbody>
-      ${merged
-        .slice()
-        .reverse()
-        .map(
-          (p) => `<tr>
-            <td>${toPersianDigits(p.date)}</td>
-            <td>${formatNumber(p.gold)}</td>
-            <td>${formatNumber(p.index)}</td>
-          </tr>`,
-        )
-        .join("")}
-    </tbody>`;
+  dataTableAssetLabel = assetLabel;
+  dataTableIndexLabel = indexLabel;
+  dataTable.setRows(merged);
 }
 
 function renderPctChangeSections(merged: MergedPoint[], days: number, assetLabel: string, indexLabel: string): void {
