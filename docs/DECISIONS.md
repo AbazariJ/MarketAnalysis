@@ -55,3 +55,31 @@ the UI says so. Index↔index doubles exposure to the unverified tsetmc CORS beh
 cache is now keyed by `kind:id` and stores the in-flight promise, so both slots share one fetch
 when they name the same instrument, and failures are evicted so re-selecting retries. Rejected: a
 "comparison mode" toggle switching between two dropdown sets — same capability, more UI state.
+
+
+## 2026-07-26 — Jalali dates as a display layer only [T-008]
+**Context.** Every user-facing date was Gregorian ISO, which no Persian reader of this app thinks
+in. Plotly's world-calendar component (`calendar: "jalali"`) is not part of the
+`plotly.js-cartesian-dist-min` bundle we ship. **Decision.** Keep every date Gregorian ISO
+`yyyy-mm-dd` from fetch through merge, analysis and sorting; convert to Jalali only at the render
+boundary. Conversion uses `Intl.DateTimeFormat("en-u-ca-persian-nu-latn")` on UTC noon rather than
+a hand-rolled arithmetic table. Date axes stay `type: "date"` on Gregorian timestamps and only
+their tick *labels* are replaced (`tickmode: "array"`), recomputed on every `plotly_relayout` so
+zooming keeps producing Jalali labels at a sensible spacing. **Consequences.** Merging, range
+filtering and lexicographic sorting are untouched, so no analysis code learns about calendars.
+Jalali output is zero-padded `yyyy/mm/dd`, which sorts and range-compares as a string exactly like
+the ISO input — the data table simply swaps the formatted value in. Latin digits, not Persian ones,
+to match the numbers everywhere else in the UI. Rejected: a `type: "category"` axis of pre-formatted
+Jalali strings (loses date-aware zoom and spacing); rejected: bundling full plotly.js for its
+calendar support (the bundle is already 1.9 MB — see T-015).
+
+
+## 2026-07-26 — Time range filters the data, not the axis [T-025]
+**Context.** The app always analysed each series' full history; the only way to look at a recent
+window was to zoom the chart, which changed nothing downstream. **Decision.** Add a range dropdown
+(1/3/6 months, 1/3/5/10 years, all) that slices the merged series *before* rendering, defaulting to
+the whole history. The window is anchored at the newest row rather than today, so a series that
+stopped updating still shows data. **Consequences.** Ratio means, percent-change medians, the stats
+table and the raw-data table all describe the selected window, not the full history — the range is
+an analysis control, not a viewport. Short windows can leave fewer rows than the percent-change
+lookback, in which case those sections hide themselves as they already did for short series.

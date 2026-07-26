@@ -14,7 +14,10 @@ import { computeRatioSeries, meanRatio } from "./analysis/ratio";
 import { alignedLogRanges } from "./analysis/axisScale";
 import { computePctChangeSeries, type PctChangePoint } from "./analysis/pctChange";
 import { mean, median } from "./analysis/stats";
+import { formatJalali, formatJalaliAll } from "./analysis/jalali";
+import { DEFAULT_RANGE_VALUE, RANGE_OPTIONS, filterByRange, findRange } from "./analysis/dateRange";
 import { initDataTable } from "./ui/dataTable";
+import { enableJalaliRetick, jalaliTickProps } from "./ui/jalaliAxis";
 import { FetchError, type PricePoint } from "./types";
 import { version as APP_VERSION } from "../package.json";
 
@@ -78,6 +81,7 @@ const dataTableCountEl = document.querySelector<HTMLElement>("#data-table-count"
 const firstSelectEl = document.querySelector<HTMLSelectElement>("#first-select")!;
 const secondSelectEl = document.querySelector<HTMLSelectElement>("#second-select")!;
 const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
+const rangeSelectEl = document.querySelector<HTMLSelectElement>("#range-select")!;
 
 /**
  * Session cache keyed by instrument, holding the in-flight promise rather than
@@ -143,6 +147,7 @@ function showError(message: string): void {
  */
 function renderPriceChart(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
   const dates = merged.map((p) => p.date);
+  const jalaliDates = formatJalaliAll(dates);
   const firstValues = merged.map((p) => p.first);
   const secondValues = merged.map((p) => p.second);
   const layout = baseLayout(420);
@@ -151,13 +156,33 @@ function renderPriceChart(merged: MergedPoint[], firstLabel: string, secondLabel
   void Plotly.react(
     priceChartEl,
     [
-      { x: dates, y: firstValues, type: "scatter", mode: "lines", name: firstLabel, line: { color: FIRST_COLOR }, yaxis: "y" },
-      { x: dates, y: secondValues, type: "scatter", mode: "lines", name: secondLabel, line: { color: SECOND_COLOR }, yaxis: "y2" },
+      {
+        x: dates,
+        y: firstValues,
+        customdata: jalaliDates,
+        type: "scatter",
+        mode: "lines",
+        name: firstLabel,
+        line: { color: FIRST_COLOR },
+        yaxis: "y",
+        hovertemplate: `%{customdata}<br>${firstLabel}: %{y:,.2f}<extra></extra>`,
+      },
+      {
+        x: dates,
+        y: secondValues,
+        customdata: jalaliDates,
+        type: "scatter",
+        mode: "lines",
+        name: secondLabel,
+        line: { color: SECOND_COLOR },
+        yaxis: "y2",
+        hovertemplate: `%{customdata}<br>${secondLabel}: %{y:,.2f}<extra></extra>`,
+      },
     ],
     {
       ...layout,
       margin: { ...layout.margin, r: 72 },
-      xaxis: { ...layout.xaxis, title: { text: "تاریخ" }, type: "date" },
+      xaxis: { ...layout.xaxis, title: { text: "تاریخ" }, type: "date", ...jalaliTickProps(dates[0], dates[dates.length - 1]) },
       yaxis: {
         ...layout.yaxis,
         title: { text: firstLabel, font: { color: FIRST_COLOR } },
@@ -179,12 +204,14 @@ function renderPriceChart(merged: MergedPoint[], firstLabel: string, secondLabel
     },
     PLOTLY_CONFIG,
   );
+  enableJalaliRetick(priceChartEl);
 }
 
 /** Notebook cell 11, plot 4: the ratio series against its own mean. */
 function renderRatioChart(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
   const ratios = computeRatioSeries(merged);
   const meanValue = meanRatio(ratios);
+  const dates = ratios.map((p) => p.date);
   const layout = baseLayout(420);
 
   ratioTitleEl.textContent = `نسبت ${firstLabel} به ${secondLabel}`;
@@ -192,17 +219,24 @@ function renderRatioChart(merged: MergedPoint[], firstLabel: string, secondLabel
     ratioChartEl,
     [
       {
-        x: ratios.map((p) => p.date),
+        x: dates,
         y: ratios.map((p) => p.ratio),
+        customdata: formatJalaliAll(dates),
         type: "scatter",
         mode: "lines",
         name: `${firstLabel} به ${secondLabel}`,
         line: { color: RATIO_COLOR },
+        hovertemplate: `%{customdata}<br>نسبت: %{y:,.2f}<extra></extra>`,
       },
     ],
     {
       ...layout,
-      xaxis: { ...layout.xaxis, title: { text: "تاریخ" }, type: "date" },
+      xaxis: {
+        ...layout.xaxis,
+        title: { text: "تاریخ" },
+        type: "date",
+        ...(dates.length > 0 ? jalaliTickProps(dates[0], dates[dates.length - 1]) : {}),
+      },
       yaxis: { ...layout.yaxis, title: { text: "نسبت" } },
       shapes: [
         {
@@ -230,6 +264,7 @@ function renderRatioChart(merged: MergedPoint[], firstLabel: string, secondLabel
     },
     PLOTLY_CONFIG,
   );
+  enableJalaliRetick(ratioChartEl);
 }
 
 /**
@@ -252,7 +287,7 @@ function renderCorrelationChart(merged: MergedPoint[], firstLabel: string, secon
       {
         x: secondValues,
         y: merged.map((p) => p.first),
-        text: merged.map((p) => p.date),
+        text: formatJalaliAll(merged.map((p) => p.date)),
         type: "scatter",
         mode: "markers",
         name: `${firstLabel} / ${secondLabel}`,
@@ -293,7 +328,7 @@ function renderPctScatter(pctSeries: PctChangePoint[], days: number, firstLabel:
       {
         x: secondPcts,
         y: firstPcts,
-        text: pctSeries.map((p) => p.date),
+        text: formatJalaliAll(pctSeries.map((p) => p.date)),
         type: "scatter",
         mode: "markers",
         name: "روزها",
@@ -410,7 +445,9 @@ const dataTable = initDataTable<MergedPoint>({
 function renderDataTable(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
   dataTable.setColumnTitle("first", firstLabel);
   dataTable.setColumnTitle("second", secondLabel);
-  dataTable.setRows(merged);
+  // Zero-padded Jalali dates sort and filter as strings exactly like the ISO
+  // ones they replace, so the column keeps its chronological ordering.
+  dataTable.setRows(merged.map((point) => ({ ...point, date: formatJalali(point.date) })));
 }
 
 function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel: string, secondLabel: string): void {
@@ -428,11 +465,16 @@ function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel
   renderStatsTable(pctSeries, firstLabel, secondLabel);
 }
 
-async function loadAndRender(firstKey: string, secondKey: string, days: number): Promise<void> {
+async function loadAndRender(firstKey: string, secondKey: string, days: number, rangeValue: string): Promise<void> {
   const first = findInstrument(firstKey);
   const second = findInstrument(secondKey);
   if (!first || !second) {
     showError("⚠️ سری انتخاب‌شده شناخته نشد.");
+    return;
+  }
+  const range = findRange(rangeValue);
+  if (!range) {
+    showError("⚠️ بازه زمانی انتخاب‌شده شناخته نشد.");
     return;
   }
 
@@ -451,9 +493,15 @@ async function loadAndRender(firstKey: string, secondKey: string, days: number):
     return;
   }
 
-  const merged = mergeSeries(firstSeries, secondSeries);
-  if (merged.length === 0) {
+  const allMerged = mergeSeries(firstSeries, secondSeries);
+  if (allMerged.length === 0) {
     showError("⚠️ هیچ روز مشترکی بین دو سری انتخاب‌شده یافت نشد.");
+    return;
+  }
+
+  const merged = filterByRange(allMerged, range.months);
+  if (merged.length === 0) {
+    showError("⚠️ در بازه زمانی انتخاب‌شده داده‌ای وجود ندارد.");
     return;
   }
 
@@ -476,11 +524,18 @@ function main(): void {
     PCT_CHANGE_WINDOWS.map((d) => ({ label: `${d} روز`, value: String(d) })),
     String(DEFAULT_PCT_CHANGE_WINDOW),
   );
+  populateDropdown(
+    rangeSelectEl,
+    RANGE_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
+    DEFAULT_RANGE_VALUE,
+  );
 
-  const rerender = () => void loadAndRender(firstSelectEl.value, secondSelectEl.value, Number(daysSelectEl.value));
+  const rerender = () =>
+    void loadAndRender(firstSelectEl.value, secondSelectEl.value, Number(daysSelectEl.value), rangeSelectEl.value);
   firstSelectEl.addEventListener("change", rerender);
   secondSelectEl.addEventListener("change", rerender);
   daysSelectEl.addEventListener("change", rerender);
+  rangeSelectEl.addEventListener("change", rerender);
 
   rerender();
 }
