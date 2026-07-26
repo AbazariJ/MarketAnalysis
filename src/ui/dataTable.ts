@@ -1,95 +1,60 @@
-export interface DataTableColumn<T> {
-  key: string;
-  /** Static text, or a function re-evaluated on each render (for labels that depend on external state). */
-  label: string | (() => string);
-  /** Rendered cell text. */
-  format: (row: T) => string;
-  /** Value used for sorting and searching — numbers sort numerically, strings alphabetically. */
-  value: (row: T) => number | string;
-}
+import { TabulatorFull as Tabulator, type ColumnDefinition } from "tabulator-tables";
+import "tabulator-tables/dist/css/tabulator.css";
 
-interface SortState {
-  key: string;
-  dir: 1 | -1;
-}
-
-export interface DataTableController<T> {
+export interface DataTableController<T extends object> {
   setRows(rows: T[]): void;
+  setColumnTitle(field: string, title: string): void;
 }
 
 /**
- * Renders an interactive table into `table`: click a header to sort by it
- * (click again to reverse), type in `searchInput` to filter rows by any
- * column's value. Re-binds header listeners on every render since the
- * header markup is regenerated each time.
+ * Wraps Tabulator (MIT, https://tabulator.info) for the downloaded-data
+ * view: per-column sort (header click) and filter (header input) come from
+ * Tabulator itself; the free-text `searchInput` is wired to an OR filter
+ * across every column.
  */
-export function initDataTable<T>(opts: {
-  table: HTMLTableElement;
+export function initDataTable<T extends object>(opts: {
+  container: HTMLElement;
   searchInput: HTMLInputElement;
   countEl?: HTMLElement;
-  columns: DataTableColumn<T>[];
-  initialSort: SortState;
+  columns: ColumnDefinition[];
+  initialSort: { column: string; dir: "asc" | "desc" };
 }): DataTableController<T> {
-  let rows: T[] = [];
-  let sort: SortState = opts.initialSort;
-  let query = "";
+  const table = new Tabulator(opts.container, {
+    data: [],
+    columns: opts.columns,
+    layout: "fitColumns",
+    height: "24rem",
+    initialSort: [opts.initialSort],
+    placeholder: "داده‌ای برای نمایش وجود ندارد",
+  });
 
-  function render(): void {
-    const filtered = query
-      ? rows.filter((row) => opts.columns.some((col) => String(col.value(row)).toLowerCase().includes(query)))
-      : rows;
-
-    const sortCol = opts.columns.find((col) => col.key === sort.key)!;
-    const sorted = filtered.slice().sort((a, b) => {
-      const av = sortCol.value(a);
-      const bv = sortCol.value(b);
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * sort.dir;
-      return String(av).localeCompare(String(bv), "fa") * sort.dir;
-    });
-
-    opts.table.innerHTML = `
-      <thead>
-        <tr>
-          ${opts.columns
-            .map((col) => {
-              const isActive = col.key === sort.key;
-              const arrow = isActive ? (sort.dir === 1 ? "▲" : "▼") : "";
-              const label = typeof col.label === "function" ? col.label() : col.label;
-              return `<th data-key="${col.key}" class="${isActive ? "sorted" : ""}" aria-sort="${
-                isActive ? (sort.dir === 1 ? "ascending" : "descending") : "none"
-              }">${label}<span class="sort-arrow">${arrow}</span></th>`;
-            })
-            .join("")}
-        </tr>
-      </thead>
-      <tbody>
-        ${sorted
-          .map((row) => `<tr>${opts.columns.map((col) => `<td>${col.format(row)}</td>`).join("")}</tr>`)
-          .join("")}
-      </tbody>`;
-
-    if (opts.countEl) {
-      opts.countEl.textContent = `${sorted.length.toLocaleString("fa-IR")} از ${rows.length.toLocaleString("fa-IR")} ردیف`;
-    }
-
-    for (const th of opts.table.querySelectorAll<HTMLTableCellElement>("th[data-key]")) {
-      th.addEventListener("click", () => {
-        const key = th.dataset.key!;
-        sort = sort.key === key ? { key, dir: sort.dir === 1 ? -1 : 1 } : { key, dir: 1 };
-        render();
-      });
-    }
+  function updateCount(): void {
+    if (!opts.countEl) return;
+    const total = table.getDataCount();
+    const visible = table.getDataCount("active");
+    opts.countEl.textContent = `${visible.toLocaleString("fa-IR")} از ${total.toLocaleString("fa-IR")} ردیف`;
   }
 
+  table.on("tableBuilt", updateCount);
+  table.on("dataFiltered", updateCount);
+  table.on("dataProcessed", updateCount);
+
   opts.searchInput.addEventListener("input", () => {
-    query = opts.searchInput.value.trim().toLowerCase();
-    render();
+    const query = opts.searchInput.value.trim();
+    if (!query) {
+      table.clearFilter(false);
+      return;
+    }
+    const fields = opts.columns.map((col) => col.field).filter((field): field is string => !!field);
+    table.setFilter(fields.map((field) => [{ field, type: "like", value: query }]));
   });
 
   return {
-    setRows(newRows: T[]) {
-      rows = newRows;
-      render();
+    setRows(rows: T[]) {
+      void table.setData(rows);
+    },
+    setColumnTitle(field: string, title: string) {
+      void table.updateColumnDefinition(field, { title });
     },
   };
 }

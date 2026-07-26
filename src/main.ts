@@ -33,7 +33,7 @@ const pctScatterTitleEl = document.querySelector<HTMLHeadingElement>("#pct-scatt
 const indexHistTitleEl = document.querySelector<HTMLHeadingElement>("#index-hist-title")!;
 const assetHistTitleEl = document.querySelector<HTMLHeadingElement>("#asset-hist-title")!;
 const statsTableEl = document.querySelector<HTMLTableElement>("#stats-table")!;
-const dataTableEl = document.querySelector<HTMLTableElement>("#data-table")!;
+const dataTableEl = document.querySelector<HTMLDivElement>("#data-table")!;
 const dataTableSearchEl = document.querySelector<HTMLInputElement>("#data-table-search")!;
 const dataTableCountEl = document.querySelector<HTMLElement>("#data-table-count")!;
 const assetSelectEl = document.querySelector<HTMLSelectElement>("#asset-select")!;
@@ -212,25 +212,22 @@ function formatNumber(value: number): string {
   return toPersianDigits(value.toLocaleString("en-US", { maximumFractionDigits: 2 }));
 }
 
-let dataTableAssetLabel = "";
-let dataTableIndexLabel = "";
-
 /** Interactive view of the raw merged series backing the charts above. */
 const dataTable = initDataTable<MergedPoint>({
-  table: dataTableEl,
+  container: dataTableEl,
   searchInput: dataTableSearchEl,
   countEl: dataTableCountEl,
-  initialSort: { key: "date", dir: -1 },
+  initialSort: { column: "date", dir: "desc" },
   columns: [
-    { key: "date", label: "تاریخ", value: (p) => p.date, format: (p) => toPersianDigits(p.date) },
-    { key: "gold", label: () => dataTableAssetLabel, value: (p) => p.gold, format: (p) => formatNumber(p.gold) },
-    { key: "index", label: () => dataTableIndexLabel, value: (p) => p.index, format: (p) => formatNumber(p.index) },
+    { field: "date", title: "تاریخ", sorter: "string", headerFilter: "input", formatter: (cell) => toPersianDigits(cell.getValue()) },
+    { field: "gold", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
+    { field: "index", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
   ],
 });
 
 function renderDataTable(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
-  dataTableAssetLabel = assetLabel;
-  dataTableIndexLabel = indexLabel;
+  dataTable.setColumnTitle("gold", assetLabel);
+  dataTable.setColumnTitle("index", indexLabel);
   dataTable.setRows(merged);
 }
 

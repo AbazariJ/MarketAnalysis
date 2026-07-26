@@ -70,63 +70,59 @@ section {
   white-space: nowrap;
 }
 
-#data-table-wrap {
-  max-height: 24rem;
-  overflow-y: auto;
+#data-table {
+  font-size: 0.88rem;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
-#data-table {
-  border-collapse: collapse;
-  font-size: 0.88rem;
-  width: 100%;
-}
-
-#data-table th,
-#data-table td {
-  padding: 0.5rem 0.9rem;
-  text-align: right;
-}
-
-#data-table tbody tr {
-  border-top: 1px solid #edf2f7;
-  transition: background 0.1s;
-}
-
-#data-table tbody tr:nth-child(even) {
-  background: #fafbfc;
-}
-
-#data-table tbody tr:hover {
-  background: #ebf4ff;
-}
-
-#data-table thead th {
+#data-table .tabulator-header {
   background: #f7fafc;
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+#data-table .tabulator-col {
+  background: #f7fafc;
+}
+
+#data-table .tabulator-col-title {
   font-weight: 600;
   color: #2d3748;
-  cursor: pointer;
-  user-select: none;
-  border-bottom: 2px solid #e2e8f0;
-  white-space: nowrap;
 }
 
-#data-table thead th:hover {
+#data-table .tabulator-col.tabulator-sortable:hover {
   background: #edf2f7;
 }
 
-#data-table thead th.sorted {
-  color: #2b6cb0;
+#data-table .tabulator-col-sorter .tabulator-arrow {
+  border-bottom-color: #a0aec0;
 }
 
-#data-table .sort-arrow {
-  display: inline-block;
-  margin-inline-start: 0.4em;
-  font-size: 0.7em;
-  color: #2b6cb0;
+#data-table .tabulator-col[aria-sort="ascending"] .tabulator-col-sorter .tabulator-arrow,
+#data-table .tabulator-col[aria-sort="descending"] .tabulator-col-sorter .tabulator-arrow {
+  border-bottom-color: #2b6cb0;
+}
+
+#data-table .tabulator-header-filter input {
+  font-family: inherit;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.35rem;
+}
+
+#data-table .tabulator-row {
+  transition: background 0.1s;
+}
+
+#data-table .tabulator-row.tabulator-row-even {
+  background: #fafbfc;
+}
+
+#data-table .tabulator-row:hover {
+  background: #ebf4ff;
+}
+
+#data-table .tabulator-cell {
+  padding: 0.5rem 0.9rem;
 }
