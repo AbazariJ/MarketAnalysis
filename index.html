@@ -33,34 +33,34 @@
       <p id="status">در حال بارگذاری داده‌ها از tgju.org و tsetmc.com…</p>
 
       <div id="charts" hidden>
-        <div class="chart-grid">
+        <div class="chart-stack">
           <section class="card">
             <h2>نمودار قیمت (مقیاس لگاریتمی)</h2>
-            <canvas id="price-chart" width="800" height="320"></canvas>
+            <div id="price-chart" class="plot"></div>
           </section>
           <section class="card">
             <h2 id="ratio-title">نسبت دارایی به شاخص</h2>
-            <canvas id="ratio-chart" width="800" height="320"></canvas>
+            <div id="ratio-chart" class="plot"></div>
           </section>
-          <section class="card card-wide">
+          <section class="card">
             <h2 id="correlation-title">پراکندگی دارایی در برابر شاخص (مقیاس لگاریتمی)</h2>
             <p class="hint">
               خط قرمز، رشد هم‌نسبت دو دارایی را نشان می‌دهد؛ نقاط بالای آن یعنی دارایی بیش از شاخص رشد کرده است.
             </p>
-            <canvas id="correlation-chart" width="800" height="360"></canvas>
+            <div id="correlation-chart" class="plot"></div>
           </section>
-          <section class="card card-wide">
+          <section class="card">
             <h2 id="pct-scatter-title">همبستگی تغییر درصدی</h2>
             <p class="hint">هر نقطه یک روز است؛ نقطه قرمز میانه هر دو سری و خطوط قرمز محورهای صفر هستند.</p>
-            <canvas id="pct-scatter-chart" width="800" height="360"></canvas>
+            <div id="pct-scatter-chart" class="plot"></div>
           </section>
           <section class="card">
             <h2 id="index-hist-title">توزیع تغییر درصدی شاخص</h2>
-            <canvas id="index-hist-chart" width="800" height="280"></canvas>
+            <div id="index-hist-chart" class="plot"></div>
           </section>
           <section class="card">
             <h2 id="asset-hist-title">توزیع تغییر درصدی دارایی</h2>
-            <canvas id="asset-hist-chart" width="800" height="280"></canvas>
+            <div id="asset-hist-chart" class="plot"></div>
           </section>
         </div>
 
