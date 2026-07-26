@@ -24,9 +24,16 @@
           <label for="second-select">سری دوم</label>
           <select id="second-select"></select>
         </div>
-        <div class="field">
-          <label for="range-select">بازه زمانی</label>
-          <select id="range-select"></select>
+        <div class="field field-date">
+          <label for="start-date">از تاریخ</label>
+          <input id="start-date" type="text" inputmode="numeric" autocomplete="off" placeholder="ابتدای داده‌ها" />
+        </div>
+        <div class="field field-date">
+          <label for="end-date">تا تاریخ</label>
+          <input id="end-date" type="text" inputmode="numeric" autocomplete="off" placeholder="انتهای داده‌ها" />
+        </div>
+        <div class="field field-reset">
+          <button id="reset-range" type="button" class="reset-button">کل بازه</button>
         </div>
         <div class="field">
           <label for="days-select">بازه تغییر درصدی</label>

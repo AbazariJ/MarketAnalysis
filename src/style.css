@@ -112,7 +112,8 @@ body {
 }
 
 select,
-input[type="search"] {
+input[type="search"],
+input[type="text"] {
   font-family: inherit;
   font-size: 0.92rem;
   color: var(--text);
@@ -124,7 +125,8 @@ input[type="search"] {
 }
 
 select:focus,
-input[type="search"]:focus {
+input[type="search"]:focus,
+input[type="text"]:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
@@ -291,4 +293,142 @@ input[type="search"]:focus {
 
 #data-table .tabulator-cell {
   padding: 0.55rem 1rem;
+}
+
+
+/* Jalali date pickers ------------------------------------------------------ */
+.field-date {
+  position: relative;
+  min-width: 9.5rem;
+}
+
+.field-reset {
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.reset-button {
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--text);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.95rem;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.reset-button:hover {
+  border-color: var(--accent);
+}
+
+.jalali-picker {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 20;
+  width: 16rem;
+  padding: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.jalali-picker[hidden] {
+  display: none;
+}
+
+.jalali-picker-head {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.jalali-picker-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.jalali-picker-nav {
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+}
+
+.jalali-picker-nav:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.jalali-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.15rem;
+}
+
+.jalali-picker-weekday {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  padding-bottom: 0.2rem;
+}
+
+.jalali-picker-blank {
+  display: block;
+}
+
+.jalali-picker-day {
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.35rem 0;
+  cursor: pointer;
+}
+
+.jalali-picker-day:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.jalali-picker-day:disabled {
+  color: var(--text-muted);
+  opacity: 0.35;
+  cursor: default;
+}
+
+.jalali-picker-day.is-selected {
+  color: #fff;
+  background: var(--accent);
+}
+
+.jalali-picker-foot {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.jalali-picker-clear {
+  font-family: inherit;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.jalali-picker-clear:hover {
+  color: var(--accent);
 }

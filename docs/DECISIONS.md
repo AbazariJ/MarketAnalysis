@@ -74,12 +74,31 @@ Jalali strings (loses date-aware zoom and spacing); rejected: bundling full plot
 calendar support (the bundle is already 1.9 MB — see T-015).
 
 
-## 2026-07-26 — Time range filters the data, not the axis [T-025]
-**Context.** The app always analysed each series' full history; the only way to look at a recent
-window was to zoom the chart, which changed nothing downstream. **Decision.** Add a range dropdown
-(1/3/6 months, 1/3/5/10 years, all) that slices the merged series *before* rendering, defaulting to
-the whole history. The window is anchored at the newest row rather than today, so a series that
-stopped updating still shows data. **Consequences.** Ratio means, percent-change medians, the stats
-table and the raw-data table all describe the selected window, not the full history — the range is
-an analysis control, not a viewport. Short windows can leave fewer rows than the percent-change
-lookback, in which case those sections hide themselves as they already did for short series.
+## 2026-07-26 — Explicit Jalali start/end pickers, not preset ranges [T-025]
+**Context.** The app always analysed each series' full history; the only way to look at a narrower
+window was to zoom a chart, which changed nothing downstream. A first pass shipped preset ranges
+(1/3/6 months, 1/3/5/10 years, all), but presets cannot express "Nowruz 1402 to Nowruz 1403", which
+is how the question is usually asked here. **Decision.** Replace the preset dropdown with two
+Jalali date pickers, start and end. Either may be left empty and falls back to the first or last
+available day, so the startup view is the full history with no interaction. The window slices the
+merged series *before* rendering. **Consequences.** Ratio means, percent-change medians, the stats
+table and the raw-data table all describe the picked window, not the full history — the pickers are
+an analysis control, not a viewport. Narrow windows can leave fewer rows than the percent-change
+lookback, in which case those sections hide themselves as they already did for short series. Picks
+survive an instrument switch by being clamped into the new series' span. Rejected: keeping the
+presets alongside the pickers — two controls answering the same question, with the ambiguity of
+which one wins.
+
+
+## 2026-07-26 — The Jalali picker is hand-rolled [T-025]
+**Context.** Native `<input type="date">` is Gregorian-only, and no browser exposes a Jalali picker.
+Every mature Persian datepicker (persian-datepicker, pwt.datepicker) depends on jQuery, which this
+app does not otherwise carry. **Decision.** Write a ~180-line calendar popup over a plain text
+input, converting via `fromJalali`/`toJalali`. `fromJalali` deliberately does not encode the 33-year
+leap cycle a second time: it estimates a Gregorian day, then steps toward the target using `toJalali`
+(the `Intl` Persian calendar) as the oracle, so the two directions cannot disagree. **Consequences.**
+No new dependency and no jQuery, at the cost of owning the popup's behaviour. The input still accepts
+typed `yyyy/mm/dd`, and days outside the loaded data are disabled, so an unusable window cannot be
+built by clicking. Leap years and month lengths are derived from the oracle rather than tabulated —
+`jalaliMonthLength` asks whether Esfand 30 exists — and a round-trip test covers every day of six
+consecutive Jalali years.

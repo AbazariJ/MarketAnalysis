@@ -15,9 +15,10 @@ import { alignedLogRanges } from "./analysis/axisScale";
 import { computePctChangeSeries, type PctChangePoint } from "./analysis/pctChange";
 import { mean, median } from "./analysis/stats";
 import { formatJalali, formatJalaliAll } from "./analysis/jalali";
-import { DEFAULT_RANGE_VALUE, RANGE_OPTIONS, filterByRange, findRange } from "./analysis/dateRange";
+import { availableWindow, clampToAvailable, filterByWindow, resolveWindow } from "./analysis/dateRange";
 import { initDataTable } from "./ui/dataTable";
 import { enableJalaliRetick, jalaliTickProps } from "./ui/jalaliAxis";
+import { initJalaliDatePicker } from "./ui/jalaliDatePicker";
 import { FetchError, type PricePoint } from "./types";
 import { version as APP_VERSION } from "../package.json";
 
@@ -81,7 +82,9 @@ const dataTableCountEl = document.querySelector<HTMLElement>("#data-table-count"
 const firstSelectEl = document.querySelector<HTMLSelectElement>("#first-select")!;
 const secondSelectEl = document.querySelector<HTMLSelectElement>("#second-select")!;
 const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
-const rangeSelectEl = document.querySelector<HTMLSelectElement>("#range-select")!;
+const startDateEl = document.querySelector<HTMLInputElement>("#start-date")!;
+const endDateEl = document.querySelector<HTMLInputElement>("#end-date")!;
+const resetRangeEl = document.querySelector<HTMLButtonElement>("#reset-range")!;
 
 /**
  * Session cache keyed by instrument, holding the in-flight promise rather than
@@ -450,6 +453,17 @@ function renderDataTable(merged: MergedPoint[], firstLabel: string, secondLabel:
   dataTable.setRows(merged.map((point) => ({ ...point, date: formatJalali(point.date) })));
 }
 
+/**
+ * Both pickers start empty, which renders the full history; picking a day
+ * re-renders from the cached series without refetching.
+ */
+const startPicker = initJalaliDatePicker({ input: startDateEl, onChange: () => rerender() });
+const endPicker = initJalaliDatePicker({ input: endDateEl, onChange: () => rerender() });
+
+function rerender(): void {
+  void loadAndRender(firstSelectEl.value, secondSelectEl.value, Number(daysSelectEl.value));
+}
+
 function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel: string, secondLabel: string): void {
   const pctSeries = computePctChangeSeries(merged, days);
   const anchors = document.querySelectorAll<HTMLElement>("#pct-scatter-chart, #second-hist-chart, #first-hist-chart, #stats-table");
@@ -465,16 +479,11 @@ function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel
   renderStatsTable(pctSeries, firstLabel, secondLabel);
 }
 
-async function loadAndRender(firstKey: string, secondKey: string, days: number, rangeValue: string): Promise<void> {
+async function loadAndRender(firstKey: string, secondKey: string, days: number): Promise<void> {
   const first = findInstrument(firstKey);
   const second = findInstrument(secondKey);
   if (!first || !second) {
     showError("⚠️ سری انتخاب‌شده شناخته نشد.");
-    return;
-  }
-  const range = findRange(rangeValue);
-  if (!range) {
-    showError("⚠️ بازه زمانی انتخاب‌شده شناخته نشد.");
     return;
   }
 
@@ -499,7 +508,22 @@ async function loadAndRender(firstKey: string, secondKey: string, days: number, 
     return;
   }
 
-  const merged = filterByRange(allMerged, range.months);
+  // The pickers can only be bounded once the data is in, so they are configured
+  // here rather than at startup; an unset side means "the edge of the data".
+  const available = availableWindow(allMerged)!;
+  startPicker.setBounds(available.start, available.end);
+  endPicker.setBounds(available.start, available.end);
+
+  const picked = resolveWindow(available, {
+    start: clampToAvailable(startPicker.getValue(), available),
+    end: clampToAvailable(endPicker.getValue(), available),
+  });
+  if (picked.start > picked.end) {
+    showError("⚠️ تاریخ شروع باید پیش از تاریخ پایان باشد.");
+    return;
+  }
+
+  const merged = filterByWindow(allMerged, picked);
   if (merged.length === 0) {
     showError("⚠️ در بازه زمانی انتخاب‌شده داده‌ای وجود ندارد.");
     return;
@@ -524,18 +548,15 @@ function main(): void {
     PCT_CHANGE_WINDOWS.map((d) => ({ label: `${d} روز`, value: String(d) })),
     String(DEFAULT_PCT_CHANGE_WINDOW),
   );
-  populateDropdown(
-    rangeSelectEl,
-    RANGE_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
-    DEFAULT_RANGE_VALUE,
-  );
 
-  const rerender = () =>
-    void loadAndRender(firstSelectEl.value, secondSelectEl.value, Number(daysSelectEl.value), rangeSelectEl.value);
   firstSelectEl.addEventListener("change", rerender);
   secondSelectEl.addEventListener("change", rerender);
   daysSelectEl.addEventListener("change", rerender);
-  rangeSelectEl.addEventListener("change", rerender);
+  resetRangeEl.addEventListener("click", () => {
+    startPicker.setValue(null);
+    endPicker.setValue(null);
+    rerender();
+  });
 
   rerender();
 }
