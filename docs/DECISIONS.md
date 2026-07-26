@@ -8,6 +8,19 @@ Entry template: date — title [related ID] / Context / Decision / Consequences 
 Example below — replace with real ones.
 -->
 
+## 2026-07-26 — Price chart uses two ratio-aligned log axes [T-023]
+**Context.** Both series shared one log axis, so the asset (tens of millions of rial) and the
+index (tens of thousands) sat far apart vertically and their shapes could not be compared.
+**Decision.** Give each series its own log axis — asset left, index right, tick labels coloured to
+match their line — and set the default ranges from `alignedLogRanges()`, which hands both axes the
+*same* ratio window measured against their own first value. **Consequences.** In the default view
+both series start at the same height and an equal percentage move covers an equal vertical
+distance, so the lines are directly comparable and crossings are meaningful. The trade-off is that
+absolute levels are no longer readable across axes, and zooming decouples the two ranges (Plotly
+autoscales each independently) — the alignment guarantee holds for the default view only, which is
+what was asked for. Rejected: normalising both series to 100 at the first point on one shared axis
+— equivalent geometry, but it discards the real price ticks the table and hovers are read against.
+
 ## 2026-07-25 — Histogram bins derived from data, not pinned [T-006]
 **Context.** The notebook hard-codes bin edges per chart (`np.linspace(-50, 800, 100)` for the
 index, `np.linspace(-50, 400, 100)` for gold) — ranges tuned by eye for one asset/index pair.

@@ -59,4 +59,5 @@ Example entries below — replace with real ones.
 - [x] T-004 (P2, M) Merge series and render price chart — 2026-07-25
 - [x] T-005 (P2, M) Gold/index ratio analysis view — 2026-07-25
 - [x] T-006 (P2, M) N-day % change distribution (correlation scatter + histograms + median/mean stats) — 2026-07-25 (window selectable: 30/90/180/365d; pct-change pipeline cross-validated against an independent reference on 3197 rows of live tgju data, exact match)
+- [x] T-023 (P2, S) Price chart: dual ratio-aligned log axes (left = asset, right = index) — 2026-07-26
 - [x] T-013 (P2, S) Asset-vs-index log-log scatter with equal-growth reference line (notebook cell 11, plot 3) — 2026-07-25

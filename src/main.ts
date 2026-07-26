@@ -4,6 +4,7 @@ import { fetchIndexSeries } from "./api/tsetmc";
 import { DEFAULT_ASSET_SYMBOL, DEFAULT_INDEX_INS_CODE, TGJU_ASSETS, TSETMC_INDICES } from "./api/assets";
 import { mergeSeries, type MergedPoint } from "./analysis/merge";
 import { computeRatioSeries, meanRatio } from "./analysis/ratio";
+import { alignedLogRanges } from "./analysis/axisScale";
 import { computePctChangeSeries, type PctChangePoint } from "./analysis/pctChange";
 import { mean, median } from "./analysis/stats";
 import { initDataTable } from "./ui/dataTable";
@@ -90,20 +91,47 @@ function showError(message: string): void {
   chartsEl.hidden = true;
 }
 
-/** Notebook cell 11, plots 1–2: both series on a shared log axis. */
+/**
+ * Notebook cell 11, plots 1–2, with each series on its own log axis — the asset
+ * on the left, the index on the right. `alignedLogRanges` anchors the default
+ * view so both series start at the same height and an equal percentage move
+ * covers an equal vertical distance on either axis; zooming decouples them.
+ */
 function renderPriceChart(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
   const dates = merged.map((p) => p.date);
+  const assetValues = merged.map((p) => p.gold);
+  const indexValues = merged.map((p) => p.index);
   const layout = baseLayout(420);
+  const ranges = alignedLogRanges(assetValues, indexValues);
+
   void Plotly.react(
     priceChartEl,
     [
-      { x: dates, y: merged.map((p) => p.gold), type: "scatter", mode: "lines", name: assetLabel, line: { color: ASSET_COLOR } },
-      { x: dates, y: merged.map((p) => p.index), type: "scatter", mode: "lines", name: indexLabel, line: { color: INDEX_COLOR } },
+      { x: dates, y: assetValues, type: "scatter", mode: "lines", name: assetLabel, line: { color: ASSET_COLOR }, yaxis: "y" },
+      { x: dates, y: indexValues, type: "scatter", mode: "lines", name: indexLabel, line: { color: INDEX_COLOR }, yaxis: "y2" },
     ],
     {
       ...layout,
+      margin: { ...layout.margin, r: 72 },
       xaxis: { ...layout.xaxis, title: { text: "تاریخ" }, type: "date" },
-      yaxis: { ...layout.yaxis, title: { text: "قیمت (مقیاس لگاریتمی)" }, type: "log" },
+      yaxis: {
+        ...layout.yaxis,
+        title: { text: assetLabel, font: { color: ASSET_COLOR } },
+        type: "log",
+        side: "left",
+        color: ASSET_COLOR,
+        ...(ranges ? { range: ranges.asset, autorange: false as const } : {}),
+      },
+      yaxis2: {
+        ...layout.yaxis,
+        title: { text: indexLabel, font: { color: INDEX_COLOR } },
+        type: "log",
+        side: "right",
+        overlaying: "y",
+        color: INDEX_COLOR,
+        showgrid: false,
+        ...(ranges ? { range: ranges.index, autorange: false as const } : {}),
+      },
     },
     PLOTLY_CONFIG,
   );
