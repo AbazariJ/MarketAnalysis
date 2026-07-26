@@ -32,6 +32,7 @@ const pctScatterTitleEl = document.querySelector<HTMLHeadingElement>("#pct-scatt
 const indexHistTitleEl = document.querySelector<HTMLHeadingElement>("#index-hist-title")!;
 const assetHistTitleEl = document.querySelector<HTMLHeadingElement>("#asset-hist-title")!;
 const statsTableEl = document.querySelector<HTMLTableElement>("#stats-table")!;
+const dataTableEl = document.querySelector<HTMLTableElement>("#data-table")!;
 const assetSelectEl = document.querySelector<HTMLSelectElement>("#asset-select")!;
 const indexSelectEl = document.querySelector<HTMLSelectElement>("#index-select")!;
 const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
@@ -204,6 +205,31 @@ function renderStatsTable(pctSeries: PctChangePoint[], assetLabel: string, index
     </tbody>`;
 }
 
+function formatNumber(value: number): string {
+  return toPersianDigits(value.toLocaleString("en-US", { maximumFractionDigits: 2 }));
+}
+
+/** Raw merged series backing the charts above, newest day first. */
+function renderDataTable(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
+  dataTableEl.innerHTML = `
+    <thead>
+      <tr><th>تاریخ</th><th>${assetLabel}</th><th>${indexLabel}</th></tr>
+    </thead>
+    <tbody>
+      ${merged
+        .slice()
+        .reverse()
+        .map(
+          (p) => `<tr>
+            <td>${toPersianDigits(p.date)}</td>
+            <td>${formatNumber(p.gold)}</td>
+            <td>${formatNumber(p.index)}</td>
+          </tr>`,
+        )
+        .join("")}
+    </tbody>`;
+}
+
 function renderPctChangeSections(merged: MergedPoint[], days: number, assetLabel: string, indexLabel: string): void {
   const pctSeries = computePctChangeSeries(merged, days);
   const anchors = document.querySelectorAll<HTMLElement>("#pct-scatter-chart, #index-hist-chart, #asset-hist-chart, #stats-table");
@@ -255,6 +281,7 @@ async function loadAndRender(symbol: string, insCode: string, days: number): Pro
   renderRatioChart(merged, assetLabel, indexLabel);
   renderCorrelationChart(merged, assetLabel, indexLabel);
   renderPctChangeSections(merged, days, assetLabel, indexLabel);
+  renderDataTable(merged, assetLabel, indexLabel);
 }
 
 function main(): void {

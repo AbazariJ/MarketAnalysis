@@ -38,3 +38,28 @@ section {
 #stats-table thead th {
   background: #f7fafc;
 }
+
+#data-table-wrap {
+  max-height: 24rem;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+}
+
+#data-table {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+#data-table th,
+#data-table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.35rem 0.9rem;
+  text-align: right;
+}
+
+#data-table thead th {
+  background: #f7fafc;
+  position: sticky;
+  top: 0;
+}
