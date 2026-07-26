@@ -42,10 +42,6 @@ const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
 
 const indexSeriesCache = new Map<string, PricePoint[]>();
 
-function toPersianDigits(value: string | number): string {
-  return String(value).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[Number(d)]);
-}
-
 function formatPercent(fraction: number): string {
   if (!Number.isFinite(fraction)) return "-";
   return `${(fraction * 100).toFixed(1)}٪`;
@@ -95,7 +91,7 @@ function renderRatioChart(merged: MergedPoint[], assetLabel: string, indexLabel:
         points: ratios.map((p) => ({ x: Date.parse(p.date), y: p.ratio })),
       },
     ],
-    { refLines: [{ y: meanValue, label: `میانگین = ${toPersianDigits(meanValue.toFixed(2))}`, color: ACCENT_COLOR }] },
+    { refLines: [{ y: meanValue, label: `میانگین = ${meanValue.toFixed(2)}`, color: ACCENT_COLOR }] },
   );
 }
 
@@ -139,7 +135,7 @@ function renderPctScatter(pctSeries: PctChangePoint[], days: number, assetLabel:
   const medianIndex = median(indexPcts);
   const medianAsset = median(assetPcts);
 
-  pctScatterTitleEl.textContent = `همبستگی تغییر درصدی ${toPersianDigits(days)} روزه`;
+  pctScatterTitleEl.textContent = `همبستگی تغییر درصدی ${days} روزه`;
   drawScatterChart(
     pctScatterCanvas,
     pctSeries.map((p) => ({ x: p.indexPct * 100, y: p.assetPct * 100 })),
@@ -155,7 +151,7 @@ function renderPctScatter(pctSeries: PctChangePoint[], days: number, assetLabel:
           x: medianIndex,
           y: medianAsset,
           color: ACCENT_COLOR,
-          label: `میانه (${toPersianDigits(medianIndex.toFixed(1))} ، ${toPersianDigits(medianAsset.toFixed(1))})`,
+          label: `میانه (${medianIndex.toFixed(1)} ، ${medianAsset.toFixed(1)})`,
         },
       ],
       xLabel: `تغییر ${indexLabel} (٪)`,
@@ -166,7 +162,6 @@ function renderPctScatter(pctSeries: PctChangePoint[], days: number, assetLabel:
 
 /** Notebook cell 12, plots 2–3: one histogram per series with its median marked. */
 function renderPctHistograms(pctSeries: PctChangePoint[], days: number, assetLabel: string, indexLabel: string): void {
-  const daysFa = toPersianDigits(days);
   const charts = [
     { canvas: indexHistCanvas, titleEl: indexHistTitleEl, label: indexLabel, color: INDEX_COLOR, values: pctSeries.map((p) => p.indexPct * 100) },
     { canvas: assetHistCanvas, titleEl: assetHistTitleEl, label: assetLabel, color: ASSET_COLOR, values: pctSeries.map((p) => p.assetPct * 100) },
@@ -174,11 +169,11 @@ function renderPctHistograms(pctSeries: PctChangePoint[], days: number, assetLab
 
   for (const chart of charts) {
     const medianValue = median(chart.values);
-    chart.titleEl.textContent = `توزیع تغییر درصدی ${daysFa} روزه ${chart.label}`;
+    chart.titleEl.textContent = `توزیع تغییر درصدی ${days} روزه ${chart.label}`;
     drawHistogram(chart.canvas, histogram(chart.values, 60), {
       barColor: chart.color,
-      verticalLines: [{ value: medianValue, color: ACCENT_COLOR, label: `میانه = ${toPersianDigits(medianValue.toFixed(1))}٪` }],
-      xLabel: `تغییر ${daysFa} روزه (٪)`,
+      verticalLines: [{ value: medianValue, color: ACCENT_COLOR, label: `میانه = ${medianValue.toFixed(1)}٪` }],
+      xLabel: `تغییر ${days} روزه (٪)`,
     });
   }
 }
@@ -199,9 +194,9 @@ function renderStatsTable(pctSeries: PctChangePoint[], assetLabel: string, index
         .map(
           (row) => `<tr>
             <td>${row.label}</td>
-            <td>${toPersianDigits(formatPercent(median(row.values)))}</td>
-            <td>${toPersianDigits(formatPercent(mean(row.values)))}</td>
-            <td>${toPersianDigits(row.values.length)}</td>
+            <td>${formatPercent(median(row.values))}</td>
+            <td>${formatPercent(mean(row.values))}</td>
+            <td>${row.values.length}</td>
           </tr>`,
         )
         .join("")}
@@ -209,7 +204,7 @@ function renderStatsTable(pctSeries: PctChangePoint[], assetLabel: string, index
 }
 
 function formatNumber(value: number): string {
-  return toPersianDigits(value.toLocaleString("en-US", { maximumFractionDigits: 2 }));
+  return value.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
 /** Interactive view of the raw merged series backing the charts above. */
@@ -219,7 +214,7 @@ const dataTable = initDataTable<MergedPoint>({
   countEl: dataTableCountEl,
   initialSort: { column: "date", dir: "desc" },
   columns: [
-    { field: "date", title: "تاریخ", sorter: "string", headerFilter: "input", formatter: (cell) => toPersianDigits(cell.getValue()) },
+    { field: "date", title: "تاریخ", sorter: "string", headerFilter: "input", formatter: (cell) => cell.getValue() },
     { field: "gold", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
     { field: "index", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
   ],
@@ -298,7 +293,7 @@ function main(): void {
   );
   populateDropdown(
     daysSelectEl,
-    PCT_CHANGE_WINDOWS.map((d) => ({ label: `${toPersianDigits(d)} روز`, value: String(d) })),
+    PCT_CHANGE_WINDOWS.map((d) => ({ label: `${d} روز`, value: String(d) })),
     String(DEFAULT_PCT_CHANGE_WINDOW),
   );
 

@@ -8,50 +8,70 @@
   </head>
   <body>
     <div id="app">
-      <h1>مقایسه دارایی با شاخص کل بورس تهران</h1>
-      <p>
-        <label for="asset-select">دارایی</label>
-        <select id="asset-select"></select>
-        <label for="index-select">شاخص</label>
-        <select id="index-select"></select>
-        <label for="days-select">بازه تغییر درصدی</label>
-        <select id="days-select"></select>
-      </p>
+      <header class="app-header">
+        <div class="app-header-text">
+          <h1>تحلیل بازار</h1>
+          <p class="app-subtitle">مقایسه دارایی با شاخص کل بورس تهران</p>
+        </div>
+      </header>
+
+      <div class="toolbar">
+        <div class="field">
+          <label for="asset-select">دارایی</label>
+          <select id="asset-select"></select>
+        </div>
+        <div class="field">
+          <label for="index-select">شاخص</label>
+          <select id="index-select"></select>
+        </div>
+        <div class="field">
+          <label for="days-select">بازه تغییر درصدی</label>
+          <select id="days-select"></select>
+        </div>
+      </div>
+
       <p id="status">در حال بارگذاری داده‌ها از tgju.org و tsetmc.com…</p>
+
       <div id="charts" hidden>
-        <section>
-          <h2>نمودار قیمت (مقیاس لگاریتمی)</h2>
-          <canvas id="price-chart" width="800" height="320"></canvas>
-        </section>
-        <section>
-          <h2 id="ratio-title">نسبت دارایی به شاخص</h2>
-          <canvas id="ratio-chart" width="800" height="320"></canvas>
-        </section>
-        <section>
-          <h2 id="correlation-title">پراکندگی دارایی در برابر شاخص (مقیاس لگاریتمی)</h2>
-          <p class="hint">
-            خط قرمز، رشد هم‌نسبت دو دارایی را نشان می‌دهد؛ نقاط بالای آن یعنی دارایی بیش از شاخص رشد کرده است.
-          </p>
-          <canvas id="correlation-chart" width="800" height="360"></canvas>
-        </section>
-        <section>
-          <h2 id="pct-scatter-title">همبستگی تغییر درصدی</h2>
-          <p class="hint">هر نقطه یک روز است؛ نقطه قرمز میانه هر دو سری و خطوط قرمز محورهای صفر هستند.</p>
-          <canvas id="pct-scatter-chart" width="800" height="360"></canvas>
-        </section>
-        <section>
-          <h2 id="index-hist-title">توزیع تغییر درصدی شاخص</h2>
-          <canvas id="index-hist-chart" width="800" height="280"></canvas>
-        </section>
-        <section>
-          <h2 id="asset-hist-title">توزیع تغییر درصدی دارایی</h2>
-          <canvas id="asset-hist-chart" width="800" height="280"></canvas>
-        </section>
-        <section>
+        <div class="chart-grid">
+          <section class="card">
+            <h2>نمودار قیمت (مقیاس لگاریتمی)</h2>
+            <canvas id="price-chart" width="800" height="320"></canvas>
+          </section>
+          <section class="card">
+            <h2 id="ratio-title">نسبت دارایی به شاخص</h2>
+            <canvas id="ratio-chart" width="800" height="320"></canvas>
+          </section>
+          <section class="card card-wide">
+            <h2 id="correlation-title">پراکندگی دارایی در برابر شاخص (مقیاس لگاریتمی)</h2>
+            <p class="hint">
+              خط قرمز، رشد هم‌نسبت دو دارایی را نشان می‌دهد؛ نقاط بالای آن یعنی دارایی بیش از شاخص رشد کرده است.
+            </p>
+            <canvas id="correlation-chart" width="800" height="360"></canvas>
+          </section>
+          <section class="card card-wide">
+            <h2 id="pct-scatter-title">همبستگی تغییر درصدی</h2>
+            <p class="hint">هر نقطه یک روز است؛ نقطه قرمز میانه هر دو سری و خطوط قرمز محورهای صفر هستند.</p>
+            <canvas id="pct-scatter-chart" width="800" height="360"></canvas>
+          </section>
+          <section class="card">
+            <h2 id="index-hist-title">توزیع تغییر درصدی شاخص</h2>
+            <canvas id="index-hist-chart" width="800" height="280"></canvas>
+          </section>
+          <section class="card">
+            <h2 id="asset-hist-title">توزیع تغییر درصدی دارایی</h2>
+            <canvas id="asset-hist-chart" width="800" height="280"></canvas>
+          </section>
+        </div>
+
+        <section class="card">
           <h2>خلاصه آماری تغییر درصدی</h2>
-          <table id="stats-table"></table>
+          <div class="table-scroll">
+            <table id="stats-table"></table>
+          </div>
         </section>
-        <section>
+
+        <section class="card">
           <h2>داده‌های خام دانلود شده</h2>
           <p class="hint">روی هر ستون کلیک کنید تا مرتب شود؛ برای جستجو در تاریخ یا مقادیر تایپ کنید.</p>
           <div class="data-table-toolbar">

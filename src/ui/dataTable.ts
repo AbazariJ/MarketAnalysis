@@ -32,7 +32,7 @@ export function initDataTable<T extends object>(opts: {
     if (!opts.countEl) return;
     const total = table.getDataCount();
     const visible = table.getDataCount("active");
-    opts.countEl.textContent = `${visible.toLocaleString("fa-IR")} از ${total.toLocaleString("fa-IR")} ردیف`;
+    opts.countEl.textContent = `${visible.toLocaleString("en-US")} از ${total.toLocaleString("en-US")} ردیف`;
   }
 
   table.on("tableBuilt", updateCount);
