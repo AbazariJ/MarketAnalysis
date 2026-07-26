@@ -53,6 +53,7 @@ Example entries below — replace with real ones.
       typing "1,234" matches nothing while the cell displays "1,234")
 
 ## Done (recent only — pruned by /groom)
+- [x] T-024 (P1, M) Compare any two series — asset↔index, asset↔asset, index↔index — 2026-07-26
 - [x] T-001 (P1, S) Bootstrap project scaffold (Vite + TS + Vitest + ESLint, one trivial test) — 2026-07-25
 - [x] T-002 (P1, S) Fetch tgju gold price series client-side — 2026-07-25
 - [x] T-003 (P1, S) Fetch TSE all-share index series client-side — 2026-07-25 (endpoint unverified live: tsetmc.com unreachable from build/dev sandbox; verify in a real browser)

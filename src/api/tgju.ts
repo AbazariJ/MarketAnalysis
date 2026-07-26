@@ -13,7 +13,7 @@ interface TgjuRow {
   7: string; // date (Jalali)
 }
 
-export async function fetchGoldSeries(symbol = "geram18"): Promise<PricePoint[]> {
+export async function fetchTgjuSeries(symbol = "geram18"): Promise<PricePoint[]> {
   let rows: TgjuRow[];
   try {
     const res = await fetch(`${TGJU_SUMMARY_URL}/${symbol}`, {

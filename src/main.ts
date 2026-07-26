@@ -1,7 +1,14 @@
 import Plotly from "plotly.js-cartesian-dist-min";
-import { fetchGoldSeries } from "./api/tgju";
-import { fetchIndexSeries } from "./api/tsetmc";
-import { DEFAULT_ASSET_SYMBOL, DEFAULT_INDEX_INS_CODE, TGJU_ASSETS, TSETMC_INDICES } from "./api/assets";
+import { fetchSeries } from "./api/series";
+import {
+  DEFAULT_FIRST_KEY,
+  DEFAULT_SECOND_KEY,
+  TGJU_INSTRUMENTS,
+  TSETMC_INSTRUMENTS,
+  findInstrument,
+  instrumentKey,
+  type Instrument,
+} from "./api/assets";
 import { mergeSeries, type MergedPoint } from "./analysis/merge";
 import { computeRatioSeries, meanRatio } from "./analysis/ratio";
 import { alignedLogRanges } from "./analysis/axisScale";
@@ -11,13 +18,18 @@ import { initDataTable } from "./ui/dataTable";
 import { FetchError, type PricePoint } from "./types";
 import { version as APP_VERSION } from "../package.json";
 
-const ASSET_COLOR = "#c9a227";
-const INDEX_COLOR = "#2b6cb0";
+const FIRST_COLOR = "#c9a227";
+const SECOND_COLOR = "#2b6cb0";
 const RATIO_COLOR = "#805ad5";
 const ACCENT_COLOR = "#e53e3e";
 
 const PCT_CHANGE_WINDOWS = [30, 90, 180, 365];
 const DEFAULT_PCT_CHANGE_WINDOW = 365;
+
+const INSTRUMENT_GROUPS = [
+  { label: "طلا، ارز و کالا", instruments: TGJU_INSTRUMENTS },
+  { label: "شاخص‌های بورس تهران", instruments: TSETMC_INSTRUMENTS },
+];
 
 const PLOTLY_CONFIG: Partial<Plotly.Config> = {
   responsive: true,
@@ -52,26 +64,58 @@ const priceChartEl = document.querySelector<HTMLDivElement>("#price-chart")!;
 const ratioChartEl = document.querySelector<HTMLDivElement>("#ratio-chart")!;
 const correlationChartEl = document.querySelector<HTMLDivElement>("#correlation-chart")!;
 const pctScatterChartEl = document.querySelector<HTMLDivElement>("#pct-scatter-chart")!;
-const indexHistChartEl = document.querySelector<HTMLDivElement>("#index-hist-chart")!;
-const assetHistChartEl = document.querySelector<HTMLDivElement>("#asset-hist-chart")!;
+const secondHistChartEl = document.querySelector<HTMLDivElement>("#second-hist-chart")!;
+const firstHistChartEl = document.querySelector<HTMLDivElement>("#first-hist-chart")!;
 const ratioTitleEl = document.querySelector<HTMLHeadingElement>("#ratio-title")!;
 const correlationTitleEl = document.querySelector<HTMLHeadingElement>("#correlation-title")!;
 const pctScatterTitleEl = document.querySelector<HTMLHeadingElement>("#pct-scatter-title")!;
-const indexHistTitleEl = document.querySelector<HTMLHeadingElement>("#index-hist-title")!;
-const assetHistTitleEl = document.querySelector<HTMLHeadingElement>("#asset-hist-title")!;
+const secondHistTitleEl = document.querySelector<HTMLHeadingElement>("#second-hist-title")!;
+const firstHistTitleEl = document.querySelector<HTMLHeadingElement>("#first-hist-title")!;
 const statsTableEl = document.querySelector<HTMLTableElement>("#stats-table")!;
 const dataTableEl = document.querySelector<HTMLDivElement>("#data-table")!;
 const dataTableSearchEl = document.querySelector<HTMLInputElement>("#data-table-search")!;
 const dataTableCountEl = document.querySelector<HTMLElement>("#data-table-count")!;
-const assetSelectEl = document.querySelector<HTMLSelectElement>("#asset-select")!;
-const indexSelectEl = document.querySelector<HTMLSelectElement>("#index-select")!;
+const firstSelectEl = document.querySelector<HTMLSelectElement>("#first-select")!;
+const secondSelectEl = document.querySelector<HTMLSelectElement>("#second-select")!;
 const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
 
-const indexSeriesCache = new Map<string, PricePoint[]>();
+/**
+ * Session cache keyed by instrument, holding the in-flight promise rather than
+ * the resolved rows — so picking the same instrument in both slots fetches once.
+ */
+const seriesCache = new Map<string, Promise<PricePoint[]>>();
+
+function loadSeries(instrument: Instrument): Promise<PricePoint[]> {
+  const key = instrumentKey(instrument);
+  const cached = seriesCache.get(key);
+  if (cached) return cached;
+
+  const pending = fetchSeries(instrument);
+  seriesCache.set(key, pending);
+  // A failed fetch must not be cached, or the retry on re-select is a no-op.
+  void pending.catch(() => seriesCache.delete(key));
+  return pending;
+}
 
 function formatPercent(fraction: number): string {
   if (!Number.isFinite(fraction)) return "-";
   return `${(fraction * 100).toFixed(1)}٪`;
+}
+
+/** Fills a select with every instrument, grouped by source, and selects `defaultKey`. */
+function populateInstrumentDropdown(select: HTMLSelectElement, defaultKey: string): void {
+  for (const group of INSTRUMENT_GROUPS) {
+    const optgroup = document.createElement("optgroup");
+    optgroup.label = group.label;
+    for (const instrument of group.instruments) {
+      const option = document.createElement("option");
+      option.value = instrumentKey(instrument);
+      option.textContent = instrument.label;
+      optgroup.appendChild(option);
+    }
+    select.appendChild(optgroup);
+  }
+  select.value = defaultKey;
 }
 
 function populateDropdown(select: HTMLSelectElement, options: { label: string; value: string }[], defaultValue: string): void {
@@ -92,23 +136,23 @@ function showError(message: string): void {
 }
 
 /**
- * Notebook cell 11, plots 1–2, with each series on its own log axis — the asset
- * on the left, the index on the right. `alignedLogRanges` anchors the default
- * view so both series start at the same height and an equal percentage move
- * covers an equal vertical distance on either axis; zooming decouples them.
+ * Notebook cell 11, plots 1–2, with each series on its own log axis — the first
+ * series on the left, the second on the right. `alignedLogRanges` anchors the
+ * default view so both series start at the same height and an equal percentage
+ * move covers an equal vertical distance on either axis; zooming decouples them.
  */
-function renderPriceChart(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
+function renderPriceChart(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
   const dates = merged.map((p) => p.date);
-  const assetValues = merged.map((p) => p.gold);
-  const indexValues = merged.map((p) => p.index);
+  const firstValues = merged.map((p) => p.first);
+  const secondValues = merged.map((p) => p.second);
   const layout = baseLayout(420);
-  const ranges = alignedLogRanges(assetValues, indexValues);
+  const ranges = alignedLogRanges(firstValues, secondValues);
 
   void Plotly.react(
     priceChartEl,
     [
-      { x: dates, y: assetValues, type: "scatter", mode: "lines", name: assetLabel, line: { color: ASSET_COLOR }, yaxis: "y" },
-      { x: dates, y: indexValues, type: "scatter", mode: "lines", name: indexLabel, line: { color: INDEX_COLOR }, yaxis: "y2" },
+      { x: dates, y: firstValues, type: "scatter", mode: "lines", name: firstLabel, line: { color: FIRST_COLOR }, yaxis: "y" },
+      { x: dates, y: secondValues, type: "scatter", mode: "lines", name: secondLabel, line: { color: SECOND_COLOR }, yaxis: "y2" },
     ],
     {
       ...layout,
@@ -116,21 +160,21 @@ function renderPriceChart(merged: MergedPoint[], assetLabel: string, indexLabel:
       xaxis: { ...layout.xaxis, title: { text: "تاریخ" }, type: "date" },
       yaxis: {
         ...layout.yaxis,
-        title: { text: assetLabel, font: { color: ASSET_COLOR } },
+        title: { text: firstLabel, font: { color: FIRST_COLOR } },
         type: "log",
         side: "left",
-        color: ASSET_COLOR,
-        ...(ranges ? { range: ranges.asset, autorange: false as const } : {}),
+        color: FIRST_COLOR,
+        ...(ranges ? { range: ranges.first, autorange: false as const } : {}),
       },
       yaxis2: {
         ...layout.yaxis,
-        title: { text: indexLabel, font: { color: INDEX_COLOR } },
+        title: { text: secondLabel, font: { color: SECOND_COLOR } },
         type: "log",
         side: "right",
         overlaying: "y",
-        color: INDEX_COLOR,
+        color: SECOND_COLOR,
         showgrid: false,
-        ...(ranges ? { range: ranges.index, autorange: false as const } : {}),
+        ...(ranges ? { range: ranges.second, autorange: false as const } : {}),
       },
     },
     PLOTLY_CONFIG,
@@ -138,12 +182,12 @@ function renderPriceChart(merged: MergedPoint[], assetLabel: string, indexLabel:
 }
 
 /** Notebook cell 11, plot 4: the ratio series against its own mean. */
-function renderRatioChart(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
+function renderRatioChart(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
   const ratios = computeRatioSeries(merged);
   const meanValue = meanRatio(ratios);
   const layout = baseLayout(420);
 
-  ratioTitleEl.textContent = `نسبت ${assetLabel} به ${indexLabel}`;
+  ratioTitleEl.textContent = `نسبت ${firstLabel} به ${secondLabel}`;
   void Plotly.react(
     ratioChartEl,
     [
@@ -152,7 +196,7 @@ function renderRatioChart(merged: MergedPoint[], assetLabel: string, indexLabel:
         y: ratios.map((p) => p.ratio),
         type: "scatter",
         mode: "lines",
-        name: `${assetLabel} به ${indexLabel}`,
+        name: `${firstLabel} به ${secondLabel}`,
         line: { color: RATIO_COLOR },
       },
     ],
@@ -189,34 +233,35 @@ function renderRatioChart(merged: MergedPoint[], assetLabel: string, indexLabel:
 }
 
 /**
- * Notebook cell 11, plot 3: log-log scatter of asset against index, with a red
- * reference line anchored at (minIndex, minAsset) rising in exact proportion to
- * the index — the path the asset would trace if both grew at the same rate.
+ * Notebook cell 11, plot 3: log-log scatter of the first series against the
+ * second, with a red reference line anchored at (minSecond, minFirst) rising in
+ * exact proportion to the second — the path the first would trace if both grew
+ * at the same rate.
  */
-function renderCorrelationChart(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
-  const indexValues = merged.map((p) => p.index);
-  const minIndex = Math.min(...indexValues);
-  const maxIndex = Math.max(...indexValues);
-  const minAsset = Math.min(...merged.map((p) => p.gold));
+function renderCorrelationChart(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
+  const secondValues = merged.map((p) => p.second);
+  const minSecond = Math.min(...secondValues);
+  const maxSecond = Math.max(...secondValues);
+  const minFirst = Math.min(...merged.map((p) => p.first));
   const layout = baseLayout(460);
 
-  correlationTitleEl.textContent = `پراکندگی ${assetLabel} در برابر ${indexLabel} (مقیاس لگاریتمی)`;
+  correlationTitleEl.textContent = `پراکندگی ${firstLabel} در برابر ${secondLabel} (مقیاس لگاریتمی)`;
   void Plotly.react(
     correlationChartEl,
     [
       {
-        x: indexValues,
-        y: merged.map((p) => p.gold),
+        x: secondValues,
+        y: merged.map((p) => p.first),
         text: merged.map((p) => p.date),
         type: "scatter",
         mode: "markers",
-        name: `${assetLabel} / ${indexLabel}`,
-        marker: { color: INDEX_COLOR, opacity: 0.35, size: 5 },
-        hovertemplate: `%{text}<br>${indexLabel}: %{x:,.2f}<br>${assetLabel}: %{y:,.2f}<extra></extra>`,
+        name: `${firstLabel} / ${secondLabel}`,
+        marker: { color: SECOND_COLOR, opacity: 0.35, size: 5 },
+        hovertemplate: `%{text}<br>${secondLabel}: %{x:,.2f}<br>${firstLabel}: %{y:,.2f}<extra></extra>`,
       },
       {
-        x: [minIndex, maxIndex],
-        y: [minAsset, (minAsset * maxIndex) / minIndex],
+        x: [minSecond, maxSecond],
+        y: [minFirst, (minFirst * maxSecond) / minSecond],
         type: "scatter",
         mode: "lines",
         name: "رشد هم‌نسبت",
@@ -226,19 +271,19 @@ function renderCorrelationChart(merged: MergedPoint[], assetLabel: string, index
     ],
     {
       ...layout,
-      xaxis: { ...layout.xaxis, title: { text: indexLabel }, type: "log" },
-      yaxis: { ...layout.yaxis, title: { text: assetLabel }, type: "log" },
+      xaxis: { ...layout.xaxis, title: { text: secondLabel }, type: "log" },
+      yaxis: { ...layout.yaxis, title: { text: firstLabel }, type: "log" },
     },
     PLOTLY_CONFIG,
   );
 }
 
-/** Notebook cell 12, plot 1: index vs asset percent change, median marker, zero crosshairs. */
-function renderPctScatter(pctSeries: PctChangePoint[], days: number, assetLabel: string, indexLabel: string): void {
-  const indexPcts = pctSeries.map((p) => p.indexPct * 100);
-  const assetPcts = pctSeries.map((p) => p.assetPct * 100);
-  const medianIndex = median(indexPcts);
-  const medianAsset = median(assetPcts);
+/** Notebook cell 12, plot 1: second vs first percent change, median marker, zero crosshairs. */
+function renderPctScatter(pctSeries: PctChangePoint[], days: number, firstLabel: string, secondLabel: string): void {
+  const secondPcts = pctSeries.map((p) => p.secondPct * 100);
+  const firstPcts = pctSeries.map((p) => p.firstPct * 100);
+  const medianSecond = median(secondPcts);
+  const medianFirst = median(firstPcts);
   const layout = baseLayout(460);
 
   pctScatterTitleEl.textContent = `همبستگی تغییر درصدی ${days} روزه`;
@@ -246,39 +291,39 @@ function renderPctScatter(pctSeries: PctChangePoint[], days: number, assetLabel:
     pctScatterChartEl,
     [
       {
-        x: indexPcts,
-        y: assetPcts,
+        x: secondPcts,
+        y: firstPcts,
         text: pctSeries.map((p) => p.date),
         type: "scatter",
         mode: "markers",
         name: "روزها",
-        marker: { color: INDEX_COLOR, opacity: 0.15, size: 5 },
-        hovertemplate: `%{text}<br>${indexLabel}: %{x:.2f}٪<br>${assetLabel}: %{y:.2f}٪<extra></extra>`,
+        marker: { color: SECOND_COLOR, opacity: 0.15, size: 5 },
+        hovertemplate: `%{text}<br>${secondLabel}: %{x:.2f}٪<br>${firstLabel}: %{y:.2f}٪<extra></extra>`,
       },
       {
-        x: [medianIndex],
-        y: [medianAsset],
+        x: [medianSecond],
+        y: [medianFirst],
         type: "scatter",
         mode: "markers",
-        name: `میانه (${medianIndex.toFixed(1)} ، ${medianAsset.toFixed(1)})`,
+        name: `میانه (${medianSecond.toFixed(1)} ، ${medianFirst.toFixed(1)})`,
         marker: { color: ACCENT_COLOR, size: 11, symbol: "diamond" },
-        hovertemplate: `میانه<br>${indexLabel}: %{x:.2f}٪<br>${assetLabel}: %{y:.2f}٪<extra></extra>`,
+        hovertemplate: `میانه<br>${secondLabel}: %{x:.2f}٪<br>${firstLabel}: %{y:.2f}٪<extra></extra>`,
       },
     ],
     {
       ...layout,
-      xaxis: { ...layout.xaxis, title: { text: `تغییر ${indexLabel} (٪)` }, zeroline: true, zerolinecolor: ACCENT_COLOR, zerolinewidth: 1.5 },
-      yaxis: { ...layout.yaxis, title: { text: `تغییر ${assetLabel} (٪)` }, zeroline: true, zerolinecolor: ACCENT_COLOR, zerolinewidth: 1.5 },
+      xaxis: { ...layout.xaxis, title: { text: `تغییر ${secondLabel} (٪)` }, zeroline: true, zerolinecolor: ACCENT_COLOR, zerolinewidth: 1.5 },
+      yaxis: { ...layout.yaxis, title: { text: `تغییر ${firstLabel} (٪)` }, zeroline: true, zerolinecolor: ACCENT_COLOR, zerolinewidth: 1.5 },
     },
     PLOTLY_CONFIG,
   );
 }
 
 /** Notebook cell 12, plots 2–3: one histogram per series with its median marked. */
-function renderPctHistograms(pctSeries: PctChangePoint[], days: number, assetLabel: string, indexLabel: string): void {
+function renderPctHistograms(pctSeries: PctChangePoint[], days: number, firstLabel: string, secondLabel: string): void {
   const charts = [
-    { el: indexHistChartEl, titleEl: indexHistTitleEl, label: indexLabel, color: INDEX_COLOR, values: pctSeries.map((p) => p.indexPct * 100) },
-    { el: assetHistChartEl, titleEl: assetHistTitleEl, label: assetLabel, color: ASSET_COLOR, values: pctSeries.map((p) => p.assetPct * 100) },
+    { el: secondHistChartEl, titleEl: secondHistTitleEl, label: secondLabel, color: SECOND_COLOR, values: pctSeries.map((p) => p.secondPct * 100) },
+    { el: firstHistChartEl, titleEl: firstHistTitleEl, label: firstLabel, color: FIRST_COLOR, values: pctSeries.map((p) => p.firstPct * 100) },
   ];
 
   for (const chart of charts) {
@@ -321,10 +366,10 @@ function renderPctHistograms(pctSeries: PctChangePoint[], days: number, assetLab
 }
 
 /** Notebook cell 13: median and mean of both percent-change series. */
-function renderStatsTable(pctSeries: PctChangePoint[], assetLabel: string, indexLabel: string): void {
+function renderStatsTable(pctSeries: PctChangePoint[], firstLabel: string, secondLabel: string): void {
   const rows = [
-    { label: assetLabel, values: pctSeries.map((p) => p.assetPct) },
-    { label: indexLabel, values: pctSeries.map((p) => p.indexPct) },
+    { label: firstLabel, values: pctSeries.map((p) => p.firstPct) },
+    { label: secondLabel, values: pctSeries.map((p) => p.secondPct) },
   ];
 
   statsTableEl.innerHTML = `
@@ -357,20 +402,20 @@ const dataTable = initDataTable<MergedPoint>({
   initialSort: { column: "date", dir: "desc" },
   columns: [
     { field: "date", title: "تاریخ", sorter: "string", headerFilter: "input", formatter: (cell) => cell.getValue() },
-    { field: "gold", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
-    { field: "index", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
+    { field: "first", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
+    { field: "second", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: (cell) => formatNumber(cell.getValue()) },
   ],
 });
 
-function renderDataTable(merged: MergedPoint[], assetLabel: string, indexLabel: string): void {
-  dataTable.setColumnTitle("gold", assetLabel);
-  dataTable.setColumnTitle("index", indexLabel);
+function renderDataTable(merged: MergedPoint[], firstLabel: string, secondLabel: string): void {
+  dataTable.setColumnTitle("first", firstLabel);
+  dataTable.setColumnTitle("second", secondLabel);
   dataTable.setRows(merged);
 }
 
-function renderPctChangeSections(merged: MergedPoint[], days: number, assetLabel: string, indexLabel: string): void {
+function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel: string, secondLabel: string): void {
   const pctSeries = computePctChangeSeries(merged, days);
-  const anchors = document.querySelectorAll<HTMLElement>("#pct-scatter-chart, #index-hist-chart, #asset-hist-chart, #stats-table");
+  const anchors = document.querySelectorAll<HTMLElement>("#pct-scatter-chart, #second-hist-chart, #first-hist-chart, #stats-table");
   const hasEnoughHistory = pctSeries.length > 0;
 
   for (const anchor of anchors) {
@@ -378,71 +423,63 @@ function renderPctChangeSections(merged: MergedPoint[], days: number, assetLabel
   }
   if (!hasEnoughHistory) return;
 
-  renderPctScatter(pctSeries, days, assetLabel, indexLabel);
-  renderPctHistograms(pctSeries, days, assetLabel, indexLabel);
-  renderStatsTable(pctSeries, assetLabel, indexLabel);
+  renderPctScatter(pctSeries, days, firstLabel, secondLabel);
+  renderPctHistograms(pctSeries, days, firstLabel, secondLabel);
+  renderStatsTable(pctSeries, firstLabel, secondLabel);
 }
 
-async function loadAndRender(symbol: string, insCode: string, days: number): Promise<void> {
-  const asset = TGJU_ASSETS.find((a) => a.symbol === symbol);
-  const index = TSETMC_INDICES.find((i) => i.insCode === insCode);
-  const assetLabel = asset?.label ?? symbol;
-  const indexLabel = index?.label ?? insCode;
+async function loadAndRender(firstKey: string, secondKey: string, days: number): Promise<void> {
+  const first = findInstrument(firstKey);
+  const second = findInstrument(secondKey);
+  if (!first || !second) {
+    showError("⚠️ سری انتخاب‌شده شناخته نشد.");
+    return;
+  }
 
   statusEl.hidden = false;
-  statusEl.textContent = `در حال بارگذاری داده‌های ${assetLabel} و ${indexLabel}…`;
+  statusEl.textContent = `در حال بارگذاری داده‌های ${first.label} و ${second.label}…`;
   statusEl.classList.remove("error");
   chartsEl.hidden = true;
 
-  let gold: PricePoint[];
-  let indexSeries: PricePoint[];
+  let firstSeries: PricePoint[];
+  let secondSeries: PricePoint[];
   try {
-    const cached = indexSeriesCache.get(insCode);
-    [gold, indexSeries] = await Promise.all([fetchGoldSeries(symbol), cached ? Promise.resolve(cached) : fetchIndexSeries(insCode)]);
-    indexSeriesCache.set(insCode, indexSeries);
+    [firstSeries, secondSeries] = await Promise.all([loadSeries(first), loadSeries(second)]);
   } catch (err) {
     const message = err instanceof FetchError ? err.message : "خطای غیرمنتظره هنگام بارگذاری داده‌های بازار.";
     showError(`⚠️ خطا در بارگذاری داده‌ها: ${message}`);
     return;
   }
 
-  const merged = mergeSeries(gold, indexSeries);
+  const merged = mergeSeries(firstSeries, secondSeries);
   if (merged.length === 0) {
-    showError("⚠️ هیچ روز مشترکی بین سری دارایی و شاخص یافت نشد.");
+    showError("⚠️ هیچ روز مشترکی بین دو سری انتخاب‌شده یافت نشد.");
     return;
   }
 
   statusEl.hidden = true;
   chartsEl.hidden = false;
 
-  renderPriceChart(merged, assetLabel, indexLabel);
-  renderRatioChart(merged, assetLabel, indexLabel);
-  renderCorrelationChart(merged, assetLabel, indexLabel);
-  renderPctChangeSections(merged, days, assetLabel, indexLabel);
-  renderDataTable(merged, assetLabel, indexLabel);
+  renderPriceChart(merged, first.label, second.label);
+  renderRatioChart(merged, first.label, second.label);
+  renderCorrelationChart(merged, first.label, second.label);
+  renderPctChangeSections(merged, days, first.label, second.label);
+  renderDataTable(merged, first.label, second.label);
 }
 
 function main(): void {
   versionEl.textContent = `v${APP_VERSION}`;
-  populateDropdown(
-    assetSelectEl,
-    TGJU_ASSETS.map((a) => ({ label: a.label, value: a.symbol })),
-    DEFAULT_ASSET_SYMBOL,
-  );
-  populateDropdown(
-    indexSelectEl,
-    TSETMC_INDICES.map((i) => ({ label: i.label, value: i.insCode })),
-    DEFAULT_INDEX_INS_CODE,
-  );
+  populateInstrumentDropdown(firstSelectEl, DEFAULT_FIRST_KEY);
+  populateInstrumentDropdown(secondSelectEl, DEFAULT_SECOND_KEY);
   populateDropdown(
     daysSelectEl,
     PCT_CHANGE_WINDOWS.map((d) => ({ label: `${d} روز`, value: String(d) })),
     String(DEFAULT_PCT_CHANGE_WINDOW),
   );
 
-  const rerender = () => void loadAndRender(assetSelectEl.value, indexSelectEl.value, Number(daysSelectEl.value));
-  assetSelectEl.addEventListener("change", rerender);
-  indexSelectEl.addEventListener("change", rerender);
+  const rerender = () => void loadAndRender(firstSelectEl.value, secondSelectEl.value, Number(daysSelectEl.value));
+  firstSelectEl.addEventListener("change", rerender);
+  secondSelectEl.addEventListener("change", rerender);
   daysSelectEl.addEventListener("change", rerender);
 
   rerender();

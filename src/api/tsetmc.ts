@@ -15,7 +15,7 @@ interface TsetmcHistoryRow {
   xNivInuClMresIbs: number; // close
 }
 
-export async function fetchIndexSeries(insCode = DEFAULT_INS_CODE): Promise<PricePoint[]> {
+export async function fetchTsetmcSeries(insCode = DEFAULT_INS_CODE): Promise<PricePoint[]> {
   let rows: TsetmcHistoryRow[];
   try {
     const res = await fetch(`${TSETMC_HISTORY_URL}/${insCode}`, {

@@ -2,8 +2,8 @@ import type { MergedPoint } from "./merge";
 
 export interface PctChangePoint {
   date: string;
-  assetPct: number; // fractional change, e.g. 0.25 = +25%
-  indexPct: number;
+  firstPct: number; // fractional change, e.g. 0.25 = +25%
+  secondPct: number;
 }
 
 const MS_PER_DAY = 86_400_000;
@@ -11,7 +11,7 @@ const MS_PER_DAY = 86_400_000;
 /**
  * Reindexes the merged series onto a continuous daily calendar (forward-filling
  * non-trading days), then computes the trailing `days`-calendar-day percent
- * change for both asset and index, sampled back at the original trading dates —
+ * change for both series, sampled back at the original trading dates —
  * mirroring the notebook's `df.reindex(date_range(..., freq='D')).ffill()`
  * followed by `shift(days)`. Dates without a full `days` lookback are dropped
  * (they are NaN in pandas).
@@ -24,22 +24,22 @@ export function computePctChangeSeries(merged: MergedPoint[], days: number): Pct
   const dayCount = Math.round((endMs - startMs) / MS_PER_DAY) + 1;
   const offsetOf = (date: string) => Math.round((Date.parse(date) - startMs) / MS_PER_DAY);
 
-  const dailyAsset = new Array<number>(dayCount);
-  const dailyIndex = new Array<number>(dayCount);
+  const dailyFirst = new Array<number>(dayCount);
+  const dailySecond = new Array<number>(dayCount);
 
-  let previousAsset = merged[0].gold;
-  let previousIndex = merged[0].index;
+  let previousFirst = merged[0].first;
+  let previousSecond = merged[0].second;
   let cursor = 0;
   for (const point of merged) {
     const offset = offsetOf(point.date);
     for (let i = cursor; i < offset; i++) {
-      dailyAsset[i] = previousAsset;
-      dailyIndex[i] = previousIndex;
+      dailyFirst[i] = previousFirst;
+      dailySecond[i] = previousSecond;
     }
-    dailyAsset[offset] = point.gold;
-    dailyIndex[offset] = point.index;
-    previousAsset = point.gold;
-    previousIndex = point.index;
+    dailyFirst[offset] = point.first;
+    dailySecond[offset] = point.second;
+    previousFirst = point.first;
+    previousSecond = point.second;
     cursor = offset + 1;
   }
 
@@ -47,13 +47,13 @@ export function computePctChangeSeries(merged: MergedPoint[], days: number): Pct
   for (const point of merged) {
     const pastOffset = offsetOf(point.date) - days;
     if (pastOffset < 0) continue;
-    const pastAsset = dailyAsset[pastOffset];
-    const pastIndex = dailyIndex[pastOffset];
-    if (!pastAsset || !pastIndex) continue;
+    const pastFirst = dailyFirst[pastOffset];
+    const pastSecond = dailySecond[pastOffset];
+    if (!pastFirst || !pastSecond) continue;
     series.push({
       date: point.date,
-      assetPct: point.gold / pastAsset - 1,
-      indexPct: point.index / pastIndex - 1,
+      firstPct: point.first / pastFirst - 1,
+      secondPct: point.second / pastSecond - 1,
     });
   }
 

@@ -2,8 +2,8 @@ import type { PricePoint } from "../types";
 
 export interface MergedPoint {
   date: string;
-  gold: number;
-  index: number;
+  first: number;
+  second: number;
 }
 
 /**
@@ -11,21 +11,21 @@ export interface MergedPoint {
  * only dates where both series have a value — mirroring the notebook's
  * `merge(..., how="outer").ffill()` followed by `dropna()`.
  */
-export function mergeSeries(gold: PricePoint[], index: PricePoint[]): MergedPoint[] {
-  const dates = Array.from(new Set([...gold.map((p) => p.date), ...index.map((p) => p.date)])).sort();
+export function mergeSeries(first: PricePoint[], second: PricePoint[]): MergedPoint[] {
+  const dates = Array.from(new Set([...first.map((p) => p.date), ...second.map((p) => p.date)])).sort();
 
-  const goldByDate = new Map(gold.map((p) => [p.date, p.close]));
-  const indexByDate = new Map(index.map((p) => [p.date, p.close]));
+  const firstByDate = new Map(first.map((p) => [p.date, p.close]));
+  const secondByDate = new Map(second.map((p) => [p.date, p.close]));
 
   const merged: MergedPoint[] = [];
-  let lastGold: number | undefined;
-  let lastIndex: number | undefined;
+  let lastFirst: number | undefined;
+  let lastSecond: number | undefined;
 
   for (const date of dates) {
-    lastGold = goldByDate.get(date) ?? lastGold;
-    lastIndex = indexByDate.get(date) ?? lastIndex;
-    if (lastGold !== undefined && lastIndex !== undefined) {
-      merged.push({ date, gold: lastGold, index: lastIndex });
+    lastFirst = firstByDate.get(date) ?? lastFirst;
+    lastSecond = secondByDate.get(date) ?? lastSecond;
+    if (lastFirst !== undefined && lastSecond !== undefined) {
+      merged.push({ date, first: lastFirst, second: lastSecond });
     }
   }
 

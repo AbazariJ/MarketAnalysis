@@ -38,3 +38,20 @@ shorter windows retain far more rows (the first `days` calendar days are dropped
 lookback), so the histograms densify as the window shrinks. Rejected: a free-form numeric input —
 no validation value over four sensible presets.
 
+
+## 2026-07-26 — Any-to-any series comparison via one `Instrument` type [T-024]
+**Context.** The app hard-wired the comparison to "one tgju asset vs one tsetmc index": two
+purpose-built dropdowns feeding two different fetchers. Comparing two indices, or two assets,
+was impossible even though every analysis function below the fetch already worked on two anonymous
+series. **Decision.** Collapse both sources into a single `Instrument { kind, id, label }` tagged
+by source, dispatch through `fetchSeries()`, and give both slots the same dropdown listing every
+instrument grouped by `<optgroup>`. The merged/derived field names lose their domain meaning:
+`gold`/`index` → `first`/`second`, `assetPct`/`indexPct` → `firstPct`/`secondPct`, and
+`AlignedLogRanges.asset`/`.index` → `.first`/`.second`. **Consequences.** All four combinations
+(asset↔index, asset↔asset, index↔index, and an instrument against itself) fall out of one code
+path with no mode switch. The ratio chart can now be handed two different units (a USD ounce vs a
+rial index), where the ratio's absolute value is meaningless and only its trend reads — a hint in
+the UI says so. Index↔index doubles exposure to the unverified tsetmc CORS behaviour. The series
+cache is now keyed by `kind:id` and stores the in-flight promise, so both slots share one fetch
+when they name the same instrument, and failures are evicted so re-selecting retries. Rejected: a
+"comparison mode" toggle switching between two dropdown sets — same capability, more UI state.

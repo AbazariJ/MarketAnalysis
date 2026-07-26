@@ -3,11 +3,11 @@ import { computeRatioSeries, meanRatio } from "../src/analysis/ratio";
 
 describe("ratio analysis", () => {
   const merged = [
-    { date: "2026-01-01", gold: 100, index: 10 },
-    { date: "2026-01-02", gold: 200, index: 20 },
+    { date: "2026-01-01", first: 100, second: 10 },
+    { date: "2026-01-02", first: 200, second: 20 },
   ];
 
-  it("should_divideGoldByIndex_when_computingRatioSeries", () => {
+  it("should_divideFirstBySecond_when_computingRatioSeries", () => {
     expect(computeRatioSeries(merged)).toEqual([
       { date: "2026-01-01", ratio: 10 },
       { date: "2026-01-02", ratio: 10 },

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { computePctChangeSeries } from "../src/analysis/pctChange";
 import type { MergedPoint } from "../src/analysis/merge";
 
-function buildMerged(entries: [date: string, gold: number, index: number][]): MergedPoint[] {
-  return entries.map(([date, gold, index]) => ({ date, gold, index }));
+function buildMerged(entries: [date: string, first: number, second: number][]): MergedPoint[] {
+  return entries.map(([date, first, second]) => ({ date, first, second }));
 }
 
 describe("computePctChangeSeries", () => {
@@ -15,7 +15,7 @@ describe("computePctChangeSeries", () => {
 
     const series = computePctChangeSeries(merged, 2);
 
-    expect(series).toEqual([{ date: "2026-01-03", assetPct: 0.5, indexPct: -0.5 }]);
+    expect(series).toEqual([{ date: "2026-01-03", firstPct: 0.5, secondPct: -0.5 }]);
   });
 
   it("should_dropLeadingDates_when_lookbackWindowIsIncomplete", () => {
@@ -40,7 +40,7 @@ describe("computePctChangeSeries", () => {
 
     const series = computePctChangeSeries(merged, 2);
 
-    expect(series).toEqual([{ date: "2026-01-04", assetPct: 1, indexPct: 2 }]);
+    expect(series).toEqual([{ date: "2026-01-04", firstPct: 1, secondPct: 2 }]);
   });
 
   it("should_returnEmpty_when_seriesIsEmptyOrWindowIsNonPositive", () => {

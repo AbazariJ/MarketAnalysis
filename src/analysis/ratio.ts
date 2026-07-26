@@ -6,7 +6,7 @@ export interface RatioPoint {
 }
 
 export function computeRatioSeries(merged: MergedPoint[]): RatioPoint[] {
-  return merged.map((p) => ({ date: p.date, ratio: p.gold / p.index }));
+  return merged.map((p) => ({ date: p.date, ratio: p.first / p.second }));
 }
 
 export function meanRatio(ratios: RatioPoint[]): number {

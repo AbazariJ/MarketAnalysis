@@ -11,18 +11,18 @@
       <header class="app-header">
         <div class="app-header-text">
           <h1>تحلیل بازار <span id="app-version" class="version-badge"></span></h1>
-          <p class="app-subtitle">مقایسه دارایی با شاخص کل بورس تهران</p>
+          <p class="app-subtitle">مقایسه دو سری دلخواه: دارایی، ارز، کالا یا شاخص بورس تهران</p>
         </div>
       </header>
 
       <div class="toolbar">
         <div class="field">
-          <label for="asset-select">دارایی</label>
-          <select id="asset-select"></select>
+          <label for="first-select">سری اول</label>
+          <select id="first-select"></select>
         </div>
         <div class="field">
-          <label for="index-select">شاخص</label>
-          <select id="index-select"></select>
+          <label for="second-select">سری دوم</label>
+          <select id="second-select"></select>
         </div>
         <div class="field">
           <label for="days-select">بازه تغییر درصدی</label>
@@ -43,13 +43,17 @@
             <div id="price-chart" class="plot"></div>
           </section>
           <section class="card">
-            <h2 id="ratio-title">نسبت دارایی به شاخص</h2>
+            <h2 id="ratio-title">نسبت سری اول به سری دوم</h2>
+            <p class="hint">
+              اگر واحد دو سری یکسان نباشد (مثلاً انس دلاری در برابر شاخص ریالی)، عدد نسبت واحد معناداری
+              ندارد؛ آنچه مهم است روند آن است: بالا رفتن یعنی سری اول از سری دوم جلو افتاده است.
+            </p>
             <div id="ratio-chart" class="plot"></div>
           </section>
           <section class="card">
-            <h2 id="correlation-title">پراکندگی دارایی در برابر شاخص (مقیاس لگاریتمی)</h2>
+            <h2 id="correlation-title">پراکندگی سری اول در برابر سری دوم (مقیاس لگاریتمی)</h2>
             <p class="hint">
-              خط قرمز، رشد هم‌نسبت دو دارایی را نشان می‌دهد؛ نقاط بالای آن یعنی دارایی بیش از شاخص رشد کرده است.
+              خط قرمز، رشد هم‌نسبت دو سری را نشان می‌دهد؛ نقاط بالای آن یعنی سری اول بیش از سری دوم رشد کرده است.
             </p>
             <div id="correlation-chart" class="plot"></div>
           </section>
@@ -59,12 +63,12 @@
             <div id="pct-scatter-chart" class="plot"></div>
           </section>
           <section class="card">
-            <h2 id="index-hist-title">توزیع تغییر درصدی شاخص</h2>
-            <div id="index-hist-chart" class="plot"></div>
+            <h2 id="second-hist-title">توزیع تغییر درصدی سری دوم</h2>
+            <div id="second-hist-chart" class="plot"></div>
           </section>
           <section class="card">
-            <h2 id="asset-hist-title">توزیع تغییر درصدی دارایی</h2>
-            <div id="asset-hist-chart" class="plot"></div>
+            <h2 id="first-hist-title">توزیع تغییر درصدی سری اول</h2>
+            <div id="first-hist-chart" class="plot"></div>
           </section>
         </div>
 

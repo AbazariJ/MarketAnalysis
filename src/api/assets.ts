@@ -294,3 +294,43 @@ export const TSETMC_INDICES: IndexOption[] = [
 ];
 
 export const DEFAULT_INDEX_INS_CODE = "67130298613737946"; // شاخص كل (هم وزن) / total_ew
+
+/**
+ * A single comparable series, regardless of which site serves it. Both slots of
+ * the comparison accept any instrument, so asset↔index, asset↔asset and
+ * index↔index all fall out of the same two dropdowns.
+ */
+export interface Instrument {
+  kind: "tgju" | "tsetmc";
+  /** tgju symbol or tsetmc insCode, depending on `kind`. */
+  id: string;
+  label: string;
+}
+
+/** Stable `<option>` value / cache key for an instrument, e.g. "tgju:geram18". */
+export function instrumentKey(instrument: Instrument): string {
+  return `${instrument.kind}:${instrument.id}`;
+}
+
+export const TGJU_INSTRUMENTS: Instrument[] = TGJU_ASSETS.map((asset) => ({
+  kind: "tgju",
+  id: asset.symbol,
+  label: asset.label,
+}));
+
+export const TSETMC_INSTRUMENTS: Instrument[] = TSETMC_INDICES.map((index) => ({
+  kind: "tsetmc",
+  id: index.insCode,
+  label: index.label,
+}));
+
+const INSTRUMENTS_BY_KEY = new Map(
+  [...TGJU_INSTRUMENTS, ...TSETMC_INSTRUMENTS].map((instrument) => [instrumentKey(instrument), instrument]),
+);
+
+export function findInstrument(key: string): Instrument | undefined {
+  return INSTRUMENTS_BY_KEY.get(key);
+}
+
+export const DEFAULT_FIRST_KEY = `tgju:${DEFAULT_ASSET_SYMBOL}`;
+export const DEFAULT_SECOND_KEY = `tsetmc:${DEFAULT_INDEX_INS_CODE}`;
