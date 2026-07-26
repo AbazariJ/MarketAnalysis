@@ -27,7 +27,7 @@ const SECOND_COLOR = "#2b6cb0";
 const RATIO_COLOR = "#805ad5";
 const ACCENT_COLOR = "#e53e3e";
 
-const PCT_CHANGE_WINDOWS = [30, 90, 180, 365];
+const PCT_CHANGE_WINDOWS = [1, 7, 30, 90, 180, 365];
 const DEFAULT_PCT_CHANGE_WINDOW = 365;
 
 const INSTRUMENT_GROUPS = [
