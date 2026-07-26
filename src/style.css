@@ -60,6 +60,20 @@ body {
   font-size: 1.6rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.version-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  letter-spacing: normal;
 }
 
 .app-subtitle {

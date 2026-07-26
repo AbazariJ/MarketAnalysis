@@ -10,6 +10,7 @@ import { drawScatterChart } from "./charts/scatterChart";
 import { drawHistogram } from "./charts/histogramChart";
 import { initDataTable } from "./ui/dataTable";
 import { FetchError, type PricePoint } from "./types";
+import { version as APP_VERSION } from "../package.json";
 
 const ASSET_COLOR = "#c9a227";
 const INDEX_COLOR = "#2b6cb0";
@@ -19,6 +20,7 @@ const ACCENT_COLOR = "#e53e3e";
 const PCT_CHANGE_WINDOWS = [30, 90, 180, 365];
 const DEFAULT_PCT_CHANGE_WINDOW = 365;
 
+const versionEl = document.querySelector<HTMLSpanElement>("#app-version")!;
 const statusEl = document.querySelector<HTMLParagraphElement>("#status")!;
 const chartsEl = document.querySelector<HTMLDivElement>("#charts")!;
 const priceCanvas = document.querySelector<HTMLCanvasElement>("#price-chart")!;
@@ -281,6 +283,7 @@ async function loadAndRender(symbol: string, insCode: string, days: number): Pro
 }
 
 function main(): void {
+  versionEl.textContent = `v${APP_VERSION}`;
   populateDropdown(
     assetSelectEl,
     TGJU_ASSETS.map((a) => ({ label: a.label, value: a.symbol })),
