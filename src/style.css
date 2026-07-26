@@ -349,9 +349,21 @@ input[type="text"]:focus {
 
 .jalali-picker-title {
   flex: 1;
-  text-align: center;
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.3rem 0.4rem;
+  cursor: pointer;
+}
+
+.jalali-picker-title:hover {
+  border-color: var(--border);
+  background: var(--surface-muted);
 }
 
 .jalali-picker-nav {
@@ -375,6 +387,38 @@ input[type="text"]:focus {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 0.15rem;
+}
+
+/* Month names and years need more room than a day number. */
+.jalali-picker-grid.is-wide {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.3rem;
+}
+
+.jalali-picker-cell {
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.2rem;
+  cursor: pointer;
+}
+
+.jalali-picker-cell:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.jalali-picker-cell:disabled {
+  color: var(--text-muted);
+  opacity: 0.35;
+  cursor: default;
+}
+
+.jalali-picker-cell.is-selected {
+  color: #fff;
+  background: var(--accent);
 }
 
 .jalali-picker-weekday {

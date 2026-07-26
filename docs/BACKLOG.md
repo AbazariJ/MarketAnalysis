@@ -52,6 +52,7 @@ Example entries below — replace with real ones.
       typing "1,234" matches nothing while the cell displays "1,234")
 
 ## Done (recent only — pruned by /groom)
+- [x] B-005 (P1, S) Jalali picker closed itself on every month/year navigation click — 2026-07-26
 - [x] T-008 (P2, M) Jalali (Persian) date display everywhere — 2026-07-26
 - [x] T-025 (P2, M) Jalali start/end date pickers scoping every chart, full history by default — 2026-07-26
 - [x] T-024 (P1, M) Compare any two series — asset↔index, asset↔asset, index↔index — 2026-07-26

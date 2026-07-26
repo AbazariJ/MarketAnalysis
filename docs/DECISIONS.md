@@ -102,3 +102,17 @@ typed `yyyy/mm/dd`, and days outside the loaded data are disabled, so an unusabl
 built by clicking. Leap years and month lengths are derived from the oracle rather than tabulated —
 `jalaliMonthLength` asks whether Esfand 30 exists — and a round-trip test covers every day of six
 consecutive Jalali years.
+
+
+## 2026-07-26 — DOM-level tests for the picker, on happy-dom [B-005]
+**Context.** The date picker shipped with its month/year navigation broken: re-rendering the popup
+detached the just-clicked button, so the outside-click handler concluded the click had landed
+outside and closed the calendar. Nothing in the suite could have caught it — every test ran on pure
+functions in the node environment. **Decision.** Add `happy-dom` as the test environment for UI
+components that own event handling, opted into per file via `// @vitest-environment happy-dom`, and
+cover the picker's interactions (navigate, zoom to months/years, pick, clear, type, click away).
+`jsdom` was tried first and rejected: v29 fails to load under this Node/Vitest pair
+(`ERR_REQUIRE_ESM` from a transitive dependency). **Consequences.** Component behaviour is now
+regression-tested without a browser; the node environment stays the default, so the analysis tests
+pay nothing for it. The underlying fix is that in-popup clicks stop propagating, which is also why
+the outside-click handler no longer needs to inspect the click target's ancestry.
