@@ -11,7 +11,7 @@ import {
 } from "./api/assets";
 import { mergeSeries, type MergedPoint } from "./analysis/merge";
 import { computeRatioSeries, meanRatio } from "./analysis/ratio";
-import { alignedLogRanges } from "./analysis/axisScale";
+import { alignedLogRanges, squareRange } from "./analysis/axisScale";
 import { computePctChangeSeries, type PctChangePoint } from "./analysis/pctChange";
 import { mean, median } from "./analysis/stats";
 import { formatJalali, formatJalaliAll } from "./analysis/jalali";
@@ -46,6 +46,8 @@ const isDarkTheme = window.matchMedia?.("(prefers-color-scheme: dark)").matches 
 const TEXT_COLOR = isDarkTheme ? "#e6e9ef" : "#1a202c";
 const MUTED_COLOR = isDarkTheme ? "#8b96ab" : "#64748b";
 const GRID_COLOR = isDarkTheme ? "#2a3347" : "#e3e8ef";
+const GAIN_COLOR = isDarkTheme ? "#68d391" : "#2f855a";
+const LOSS_COLOR = isDarkTheme ? "#fc8181" : "#c53030";
 
 function baseLayout(height: number): Partial<Plotly.Layout> {
   return {
@@ -79,6 +81,10 @@ const statsTableEl = document.querySelector<HTMLTableElement>("#stats-table")!;
 const dataTableEl = document.querySelector<HTMLDivElement>("#data-table")!;
 const dataTableSearchEl = document.querySelector<HTMLInputElement>("#data-table-search")!;
 const dataTableCountEl = document.querySelector<HTMLElement>("#data-table-count")!;
+const returnsTableEl = document.querySelector<HTMLDivElement>("#returns-table")!;
+const returnsTableSearchEl = document.querySelector<HTMLInputElement>("#returns-table-search")!;
+const returnsTableCountEl = document.querySelector<HTMLElement>("#returns-table-count")!;
+const returnsTitleEl = document.querySelector<HTMLHeadingElement>("#returns-title")!;
 const firstSelectEl = document.querySelector<HTMLSelectElement>("#first-select")!;
 const secondSelectEl = document.querySelector<HTMLSelectElement>("#second-select")!;
 const daysSelectEl = document.querySelector<HTMLSelectElement>("#days-select")!;
@@ -316,12 +322,18 @@ function renderCorrelationChart(merged: MergedPoint[], firstLabel: string, secon
   );
 }
 
-/** Notebook cell 12, plot 1: second vs first percent change, median marker, zero crosshairs. */
+/**
+ * Notebook cell 12, plot 1: second vs first percent change, median marker, zero
+ * crosshairs. Both axes share one range and are locked to an equal aspect, so a
+ * given percentage covers the same distance horizontally and vertically and the
+ * dashed 45° line — where both series moved equally — runs corner to corner.
+ */
 function renderPctScatter(pctSeries: PctChangePoint[], days: number, firstLabel: string, secondLabel: string): void {
   const secondPcts = pctSeries.map((p) => p.secondPct * 100);
   const firstPcts = pctSeries.map((p) => p.firstPct * 100);
   const medianSecond = median(secondPcts);
   const medianFirst = median(firstPcts);
+  const range = squareRange(secondPcts, firstPcts);
   const layout = baseLayout(460);
 
   pctScatterTitleEl.textContent = `همبستگی تغییر درصدی ${days} روزه`;
@@ -347,11 +359,42 @@ function renderPctScatter(pctSeries: PctChangePoint[], days: number, firstLabel:
         marker: { color: ACCENT_COLOR, size: 11, symbol: "diamond" },
         hovertemplate: `میانه<br>${secondLabel}: %{x:.2f}٪<br>${firstLabel}: %{y:.2f}٪<extra></extra>`,
       },
+      ...(range
+        ? [
+            {
+              x: range,
+              y: range,
+              type: "scatter" as const,
+              mode: "lines" as const,
+              name: "تغییر برابر",
+              line: { color: MUTED_COLOR, dash: "dash" as const, width: 1.5 },
+              hoverinfo: "skip" as const,
+            },
+          ]
+        : []),
     ],
     {
       ...layout,
-      xaxis: { ...layout.xaxis, title: { text: `تغییر ${secondLabel} (٪)` }, zeroline: true, zerolinecolor: ACCENT_COLOR, zerolinewidth: 1.5 },
-      yaxis: { ...layout.yaxis, title: { text: `تغییر ${firstLabel} (٪)` }, zeroline: true, zerolinecolor: ACCENT_COLOR, zerolinewidth: 1.5 },
+      xaxis: {
+        ...layout.xaxis,
+        title: { text: `تغییر ${secondLabel} (٪)` },
+        zeroline: true,
+        zerolinecolor: ACCENT_COLOR,
+        zerolinewidth: 1.5,
+        constrain: "domain",
+        ...(range ? { range: [...range] as [number, number], autorange: false as const } : {}),
+      },
+      yaxis: {
+        ...layout.yaxis,
+        title: { text: `تغییر ${firstLabel} (٪)` },
+        zeroline: true,
+        zerolinecolor: ACCENT_COLOR,
+        zerolinewidth: 1.5,
+        scaleanchor: "x",
+        scaleratio: 1,
+        constrain: "domain",
+        ...(range ? { range: [...range] as [number, number], autorange: false as const } : {}),
+      },
     },
     PLOTLY_CONFIG,
   );
@@ -453,6 +496,50 @@ function renderDataTable(merged: MergedPoint[], firstLabel: string, secondLabel:
   dataTable.setRows(merged.map((point) => ({ ...point, date: formatJalali(point.date) })));
 }
 
+interface ReturnRow {
+  date: string;
+  firstPct: number;
+  secondPct: number;
+  spreadPct: number; // firstPct − secondPct, in percentage points
+}
+
+/** Signed percent with a colour cue, for the return columns. */
+function formatSignedPercent(cell: { getValue(): number }): string {
+  const value = cell.getValue();
+  if (!Number.isFinite(value)) return "-";
+  const color = value >= 0 ? GAIN_COLOR : LOSS_COLOR;
+  const sign = value >= 0 ? "+" : "−";
+  return `<span style="color:${color}">${sign}${Math.abs(value).toFixed(2)}٪</span>`;
+}
+
+/** Interactive view of the percent changes backing the scatter and histograms. */
+const returnsTable = initDataTable<ReturnRow>({
+  container: returnsTableEl,
+  searchInput: returnsTableSearchEl,
+  countEl: returnsTableCountEl,
+  initialSort: { column: "date", dir: "desc" },
+  columns: [
+    { field: "date", title: "تاریخ", sorter: "string", headerFilter: "input", formatter: (cell) => cell.getValue() },
+    { field: "firstPct", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: formatSignedPercent },
+    { field: "secondPct", title: "", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: formatSignedPercent },
+    { field: "spreadPct", title: "اختلاف", sorter: "number", hozAlign: "right", headerFilter: "input", formatter: formatSignedPercent },
+  ],
+});
+
+function renderReturnsTable(pctSeries: PctChangePoint[], days: number, firstLabel: string, secondLabel: string): void {
+  returnsTitleEl.textContent = `بازدهی درصدی ${days} روزه`;
+  returnsTable.setColumnTitle("firstPct", firstLabel);
+  returnsTable.setColumnTitle("secondPct", secondLabel);
+  returnsTable.setRows(
+    pctSeries.map((point) => ({
+      date: formatJalali(point.date),
+      firstPct: point.firstPct * 100,
+      secondPct: point.secondPct * 100,
+      spreadPct: (point.firstPct - point.secondPct) * 100,
+    })),
+  );
+}
+
 /**
  * Both pickers start empty, which renders the full history; picking a day
  * re-renders from the cached series without refetching.
@@ -466,7 +553,9 @@ function rerender(): void {
 
 function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel: string, secondLabel: string): void {
   const pctSeries = computePctChangeSeries(merged, days);
-  const anchors = document.querySelectorAll<HTMLElement>("#pct-scatter-chart, #second-hist-chart, #first-hist-chart, #stats-table");
+  const anchors = document.querySelectorAll<HTMLElement>(
+    "#pct-scatter-chart, #second-hist-chart, #first-hist-chart, #stats-table, #returns-table",
+  );
   const hasEnoughHistory = pctSeries.length > 0;
 
   for (const anchor of anchors) {
@@ -477,6 +566,7 @@ function renderPctChangeSections(merged: MergedPoint[], days: number, firstLabel
   renderPctScatter(pctSeries, days, firstLabel, secondLabel);
   renderPctHistograms(pctSeries, days, firstLabel, secondLabel);
   renderStatsTable(pctSeries, firstLabel, secondLabel);
+  renderReturnsTable(pctSeries, days, firstLabel, secondLabel);
 }
 
 async function loadAndRender(firstKey: string, secondKey: string, days: number): Promise<void> {

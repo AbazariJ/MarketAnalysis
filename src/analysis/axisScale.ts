@@ -1,3 +1,21 @@
+/**
+ * Builds one range that covers both value sets, so a percent-vs-percent plot can
+ * give its x and y axes identical bounds. Combined with an equal-aspect lock
+ * (Plotly's `scaleanchor`), an equal move on either axis then covers an equal
+ * distance and the 45° line of "both moved the same" runs corner to corner.
+ *
+ * Returns `null` when neither set holds a finite value.
+ */
+export function squareRange(xValues: number[], yValues: number[], paddingRatio = 0.05): [number, number] | null {
+  const values = [...xValues, ...yValues].filter((v) => Number.isFinite(v));
+  if (values.length === 0) return null;
+
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const padding = (high - low) * paddingRatio || Math.abs(high) * paddingRatio || 1;
+  return [low - padding, high + padding];
+}
+
 export interface AlignedLogRanges {
   first: [number, number]; // log10 bounds for the first series' (left) axis
   second: [number, number]; // log10 bounds for the second series' (right) axis

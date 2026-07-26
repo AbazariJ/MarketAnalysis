@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { alignedLogRanges } from "../src/analysis/axisScale";
+import { alignedLogRanges, squareRange } from "../src/analysis/axisScale";
 
 /** Fraction of the axis (0 = bottom, 1 = top) at which `value` is drawn. */
 function positionOf(value: number, [low, high]: [number, number]): number {
@@ -57,5 +57,42 @@ describe("alignedLogRanges", () => {
     expect(alignedLogRanges([1, 2], [])).toBeNull();
     expect(alignedLogRanges([0, 2], [1, 2])).toBeNull();
     expect(alignedLogRanges([-5, 2], [1, 2])).toBeNull();
+  });
+});
+
+describe("squareRange", () => {
+  it("should_coverEveryValueOfBothAxes_when_rangesDiffer", () => {
+    const range = squareRange([-10, 5], [0, 40])!;
+
+    expect(range[0]).toBeLessThan(-10);
+    expect(range[1]).toBeGreaterThan(40);
+  });
+
+  it("should_returnOneSharedRange_when_calledForBothAxes", () => {
+    const x = [-3, 12];
+    const y = [-20, 4];
+
+    const range = squareRange(x, y)!;
+
+    // The same array serves both axes, so equal moves span equal distance.
+    expect(range).toEqual(squareRange(y, x));
+  });
+
+  it("should_produceNonZeroSpan_when_allValuesAreIdentical", () => {
+    const range = squareRange([7, 7], [7, 7])!;
+
+    expect(range[1]).toBeGreaterThan(range[0]);
+  });
+
+  it("should_ignoreNonFiniteValues_when_buildingTheRange", () => {
+    const range = squareRange([Number.NaN, 1], [2, Number.POSITIVE_INFINITY])!;
+
+    expect(Number.isFinite(range[0])).toBe(true);
+    expect(Number.isFinite(range[1])).toBe(true);
+  });
+
+  it("should_returnNull_when_noFiniteValueIsGiven", () => {
+    expect(squareRange([], [])).toBeNull();
+    expect(squareRange([Number.NaN], [Number.POSITIVE_INFINITY])).toBeNull();
   });
 });
